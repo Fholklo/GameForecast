@@ -12,9 +12,12 @@ user_input = {}
 st.title("GameForecast: Prédir les performances de votre jeu à sa sortie")
 st.write("Saisie des informations du jeu")
 # Création des champs de texte dans les trois premières colonnes avec plusieurs lignes
-for i, name in enumerate(text_col_names):
-    col = st.columns(3)[i % 3]  # Répartir sur trois colonnes
-    user_input[name] = col.text_input(name, key=name)
+for i in range(0, len(text_col_names), 3):  # Itérer par pas de 3
+    cols = st.columns(3)  # Créer trois colonnes
+    for j in range(3):
+        if i + j < len(text_col_names):  # Vérifier si le champ existe
+            name = text_col_names[i + j]
+            user_input[name] = cols[j].text_input(name, key=name)
 
 # Création d'une nouvelle ligne pour les champs booléens
 st.write("OS supportés :")  # Titre optionnel pour la section
