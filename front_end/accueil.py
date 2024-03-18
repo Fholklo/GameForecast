@@ -37,10 +37,14 @@ for col, name in zip(bool_cols, bool_col_names):
     user_input[name] = col.checkbox(name, key=name)
 
 # Création d'une nouvelle ligne pour les champs numériques
-st.write("Numériques :")  # Titre optionnel pour la section
+num_titles = ["Nombre de succès disponibles", "Prix en euros"]
 num_cols = st.columns(len(num_col_names))
-for col, name in zip(num_cols, num_col_names):
-    user_input[name] = col.number_input(name, min_value=0, value=0, step=1, key=name)
+for col, name, title in zip(num_cols, num_col_names, num_titles):
+    # Utilisez 'title' comme premier argument pour définir le titre affiché
+    if name == "Price":  # Pour le prix, ne pas mettre de valeur d'étape fixe pour permettre des entrées décimales
+        user_input[name] = col.number_input(title, min_value=0.0, value=0.0, format="%.2f", key=name)
+    else:  # Pour les autres champs numériques, en supposant qu'ils soient entiers
+        user_input[name] = col.number_input(title, min_value=0, value=0, step=1, key=name)
 
 # Bouton pour envoyer les données
 if st.button('Prédiction du rating'):
