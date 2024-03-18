@@ -2,29 +2,29 @@ import streamlit as st
 import requests
 
 # Définition des noms des colonnes
-col_names = [
-    "App_ID", "Release_Date", "Price", "Supported_Languages", "Support_URL",
-    "Windows", "Mac", "Linux", "Achievements", "Developers",
-    "Publishers", "Categories", "Genres"
-]
-
-# Création des colonnes dans Streamlit
-cols = st.columns(13)
+text_col_names = ["App_ID", "Release_Date", "Price", "Supported_Languages", "Support_URL", "Developers", "Publishers", "Categories", "Genres"]
+bool_col_names = ["Windows", "Mac", "Linux"]
+num_col_names = ["Achievements"]
 
 # Dictionnaire pour stocker les entrées de l'utilisateur
 user_input = {}
 
-# Boucle pour générer des champs de saisie dans chaque colonne
-for i, col in enumerate(cols):
-    # Utilisation des checkboxes pour les booléens (Windows, Mac, Linux).
-    if col_names[i] in ["Windows", "Mac", "Linux"]:
-        user_input[col_names[i]] = col.checkbox(col_names[i], key=col_names[i])
-    # Utilisation d'un champ numérique pour les Achievements.
-    elif col_names[i] == "Achievements":
-        user_input[col_names[i]] = col.number_input(col_names[i], min_value=0, value=0, step=1, key=col_names[i])
-    else:
-        # Utilisation de champs de texte pour les autres types de données.
-        user_input[col_names[i]] = col.text_input(col_names[i], key=col_names[i])
+# Création des champs de texte dans les trois premières colonnes avec plusieurs lignes
+for i, name in enumerate(text_col_names):
+    col = st.columns(3)[i % 3]  # Répartir sur trois colonnes
+    user_input[name] = col.text_input(name, key=name)
+
+# Création d'une nouvelle ligne pour les champs booléens
+st.write("Booléens :")  # Titre optionnel pour la section
+bool_cols = st.columns(len(bool_col_names))
+for col, name in zip(bool_cols, bool_col_names):
+    user_input[name] = col.checkbox(name, key=name)
+
+# Création d'une nouvelle ligne pour les champs numériques
+st.write("Numériques :")  # Titre optionnel pour la section
+num_cols = st.columns(len(num_col_names))
+for col, name in zip(num_cols, num_col_names):
+    user_input[name] = col.number_input(name, min_value=0, value=0, step=1, key=name)
 
 # Bouton pour envoyer les données
 if st.button('Envoyer les données'):
