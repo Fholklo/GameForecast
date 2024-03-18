@@ -23,10 +23,12 @@ for i in range(0, len(text_col_names), 3):  # Itérer par pas de 3
             user_input[name] = cols[j].text_input(name, key=name)
 
 # Ajout de la liste déroulante pour le genre
-user_input['Genres'] = st.multiselect('Genres test', genre_options, key='Genres')
+user_input['Genres'] = st.multiselect('Genres (plusieurs choix possibles)',
+                                      genre_options, key='Genres')
 
 # Ajout de la liste déroulante pour les catégories
-user_input['Categories'] = st.multiselect('Categories', category_options, key='Categories')
+user_input['Categories'] = st.multiselect('Categories (plusieurs choix possibles)',
+                                          category_options, key='Categories')
 
 # Création d'une nouvelle ligne pour les champs booléens
 st.write("OS supportés :")  # Titre optionnel pour la section
