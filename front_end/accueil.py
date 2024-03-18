@@ -9,6 +9,8 @@ num_col_names = ["Achievements","Price"]
 # Dictionnaire pour stocker les entrées de l'utilisateur
 user_input = {}
 
+st.title("GameForecast: Prédir les performances de votre jeu à sa sortie")
+st.write("Saisie des informations du jeu")
 # Création des champs de texte dans les trois premières colonnes avec plusieurs lignes
 for i, name in enumerate(text_col_names):
     col = st.columns(3)[i % 3]  # Répartir sur trois colonnes
