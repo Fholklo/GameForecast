@@ -1,68 +1,59 @@
 import streamlit as st
 import requests
 
-# Définition des noms des colonnes
-text_col_names = ["App_ID", "Release_Date", "Supported_Languages", "Support_URL", "Developers", "Publishers"]
-category_options = ['Single-player', 'Steam Cloud', 'Family Sharing', 'Steam Achievements', 'Partial Controller Support', 'Full controller support', 'Multi-player', 'Steam Trading Cards', 'Steam Workshop', 'Co-op', 'Online Co-op', 'Steam Leaderboards', 'PvP', 'Online PvP', 'Remote Play on Phone', 'Remote Play on Tablet', 'Remote Play on TV', 'In-App Purchases', 'Tracked Controller Support', 'VR Only', 'MMO', 'Cross-Platform Multiplayer', 'Stats', 'Includes level editor', 'Shared/Split Screen', 'Remote Play Together', 'No', 'VR Supported', 'Captions available', 'VR Support', 'Shared/Split Screen PvP', 'Shared/Split Screen Co-op', 'Valve Anti-Cheat enabled', 'LAN Co-op', 'Steam Turn Notifications', 'HDR available', 'LAN PvP', 'Commentary available', 'Includes Source SDK', 'SteamVR Collectibles', 'Mods', 'Mods (require HL2)']
-genre_options = ['Action', 'Casual', 'Indie', 'RPG', 'Simulation', 'Adventure', 'Strategy', 'Design & Illustration', 'Video Production', 'Early Access', 'Massively Multiplayer', 'Free to Play', 'Sports', 'Animation & Modeling', 'Utilities', 'Game Development', 'Photo Editing', 'Software Training', 'Nudity', 'Violent', 'Racing', 'Gore', 'Sexual Content', 'Audio Production', 'Web Publishing', 'Movie', 'Education', 'Accounting']
+# Définition des noms des colonnes et leurs étiquettes correspondantes
+text_col_names = [("App_ID", "ID de l'application"), ("Release_Date", "Date de sortie"), ("Supported_Languages", "Langues supportées"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs"), ("Categories", "Catégories")]
+genre_options = [...]
+category_options = [...]
 bool_col_names = ["Windows", "Mac", "Linux"]
-num_col_names = ["Achievements", "Price"]
+num_col_names = [("Achievements", "Nombre de succès disponibles"), ("Price", "Prix en euros")]
 
 # Dictionnaire pour stocker les entrées de l'utilisateur
 user_input = {}
+all_fields_filled = True  # Indicateur si tous les champs requis sont remplis
 
 st.title("GameForecast: Prédir les performances de votre jeu à sa sortie")
 st.write("Saisie des informations du jeu")
 
-# Création des champs de texte dans les trois premières colonnes avec plusieurs lignes
-for i in range(0, len(text_col_names), 3):  # Itérer par pas de 3
-    cols = st.columns(3)  # Créer trois colonnes
-    for j in range(3):
-        if i + j < len(text_col_names):  # Vérifier si le champ existe
-            name = text_col_names[i + j]
-            user_input[name] = cols[j].text_input(name, key=name)
+# Création des champs de texte
+for name, label in text_col_names:
+    if name != "Support_URL" and name != "Categories":  # Les champs URL du support et Categories ne sont pas obligatoires
+        user_input[name] = st.text_input(label, key=name)
+        if user_input[name] == "":  # Vérifie si le champ obligatoire est vide
+            all_fields_filled = False
+    elif name == "Support_URL":  # Gestion spéciale pour URL du support
+        user_input[name] = st.text_input(label, key=name, value="Aucune")
+        if user_input[name] == "Aucune":  # Assigner None si le champ est vide
+            user_input[name] = None
 
-# Ajout de la liste déroulante pour le genre
-user_input['Genres'] = st.multiselect('Genres (plusieurs choix possibles)',
-                                      genre_options, key='Genres')
+# Ajout des listes déroulantes pour genres et catégories (ces champs ne sont pas marqués comme obligatoires)
+user_input['Genres'] = st.multiselect('Genres', genre_options, key='Genres')
+user_input['Categories'] = st.multiselect('Catégories', category_options, key='Categories')
 
-# Ajout de la liste déroulante pour les catégories
-user_input['Categories'] = st.multiselect('Categories (plusieurs choix possibles)',
-                                          category_options, key='Categories')
-
-# Création d'une nouvelle ligne pour les champs booléens
-st.write("OS supportés :")  # Titre optionnel pour la section
+# Création des champs booléens et numériques
+st.write("OS supportés :")
 bool_cols = st.columns(len(bool_col_names))
 for col, name in zip(bool_cols, bool_col_names):
     user_input[name] = col.checkbox(name, key=name)
 
-# Création d'une nouvelle ligne pour les champs numériques
-num_titles = ["Nombre de succès disponibles", "Prix en euros"]
+st.write("Numériques :")
 num_cols = st.columns(len(num_col_names))
-for col, name, title in zip(num_cols, num_col_names, num_titles):
-    # Utilisez 'title' comme premier argument pour définir le titre affiché
-    if name == "Price":  # Pour le prix, ne pas mettre de valeur d'étape fixe pour permettre des entrées décimales
-        user_input[name] = col.number_input(title, min_value=0.0, value=0.0, format="%.2f", key=name)
-    else:  # Pour les autres champs numériques, en supposant qu'ils soient entiers
-        user_input[name] = col.number_input(title, min_value=0, value=0, step=1, key=name)
+for col, (name, label) in zip(num_cols, num_col_names):
+    user_input[name] = col.number_input(label, min_value=0.0 if name == "Price" else 0, value=0.0 if name == "Price" else 0, step=0.01 if name == "Price" else 1, key=name)
 
 # Bouton pour envoyer les données
 if st.button('Prédiction du rating'):
-    # Remplacez 'your_api_endpoint' par l'URL de votre API
-    api_endpoint = 'your_api_endpoint'
-
-    # Envoi des données à l'API
-    response = requests.post(api_endpoint, json=user_input)
-
-    # Affichage de la réponse de l'API
-    st.write(response.text)
+    if all_fields_filled:
+        api_endpoint = 'your_api_endpoint'
+        response = requests.post(api_endpoint, json=user_input)
+        st.write(response.text)
+    else:
+        st.error("Veuillez remplir tous les champs.")
 
 if st.button('Prédiction du nombre de joueurs à la sortie'):
-    # Remplacez 'your_api_endpoint' par l'URL de votre API
-    api_endpoint = 'your_api_endpoint'
-
-    # Envoi des données à l'API
-    response = requests.post(api_endpoint, json=user_input)
-
-    # Affichage de la réponse de l'API
-    st.write(response.text)
+    if all_fields_filled:
+        api_endpoint = 'your_api_endpoint'
+        response = requests.post(api_endpoint, json=user_input)
+        st.write(response.text)
+    else:
+        st.error("Veuillez remplir tous les champs.")
