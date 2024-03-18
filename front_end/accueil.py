@@ -8,7 +8,7 @@ num_col_names = ["Achievements","Price"]
 
 # Dictionnaire pour stocker les entrées de l'utilisateur
 user_input = {}
-st.markdown("<h1 style='text-align: center;'>GameForecast: Prédir les performances de votre jeu à sa sortie</h1>", unsafe_allow_html=True)
+
 st.title("GameForecast: Prédir les performances de votre jeu à sa sortie")
 st.write("Saisie des informations du jeu")
 # Création des champs de texte dans les trois premières colonnes avec plusieurs lignes
