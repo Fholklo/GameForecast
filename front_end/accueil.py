@@ -2,9 +2,9 @@ import streamlit as st
 import requests
 
 # Définition des noms des colonnes
-text_col_names = ["App_ID", "Release_Date", "Price", "Supported_Languages", "Support_URL", "Developers", "Publishers", "Categories", "Genres"]
+text_col_names = ["App_ID", "Release_Date", "Supported_Languages", "Support_URL", "Developers", "Publishers", "Categories", "Genres"]
 bool_col_names = ["Windows", "Mac", "Linux"]
-num_col_names = ["Achievements"]
+num_col_names = ["Achievements","Price"]
 
 # Dictionnaire pour stocker les entrées de l'utilisateur
 user_input = {}
@@ -15,7 +15,7 @@ for i, name in enumerate(text_col_names):
     user_input[name] = col.text_input(name, key=name)
 
 # Création d'une nouvelle ligne pour les champs booléens
-st.write("Booléens :")  # Titre optionnel pour la section
+st.write("OS supportés :")  # Titre optionnel pour la section
 bool_cols = st.columns(len(bool_col_names))
 for col, name in zip(bool_cols, bool_col_names):
     user_input[name] = col.checkbox(name, key=name)
