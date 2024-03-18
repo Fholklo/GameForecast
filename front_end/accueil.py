@@ -23,7 +23,7 @@ for i in range(0, len(text_col_names), 3):  # Itérer par pas de 3
             user_input[name] = cols[j].text_input(name, key=name)
 
 # Ajout de la liste déroulante pour le genre
-user_input['Genres'] = st.multiselect('Genres', genre_options, key='Genres')
+user_input['Genres'] = st.multiselect('Genres test', genre_options, key='Genres')
 
 # Ajout de la liste déroulante pour les catégories
 user_input['Categories'] = st.multiselect('Categories', category_options, key='Categories')
