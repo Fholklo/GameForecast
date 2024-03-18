@@ -25,12 +25,28 @@ category_options = ['Single-player', 'Steam Cloud', 'Family Sharing', 'Steam Ach
 bool_col_names = ["Windows", "Mac", "Linux"]
 num_col_names = [("Achievements", "Nombre de succès disponibles"), ("Price", "Prix en euros")]
 
+# URL de l'image d'arrière-plan
+background_url = "URL_DE_VOTRE_IMAGE"
+
+# CSS pour utiliser l'image d'arrière-plan
+background_css = f"""
+<style>
+    .stApp {{
+        background-image: url({background_url});
+        background-size: cover;
+    }}
+</style>
+"""
+# Appliquer le CSS personnalisé avec l'image d'arrière-plan
+st.markdown(background_css, unsafe_allow_html=True)
+
+
 # Dictionnaire pour stocker les entrées de l'utilisateur
 user_input = {}
 all_fields_filled = True  # Indicateur si tous les champs requis sont remplis
 
-st.title("GameForecast: Prédir les performances de votre jeu à sa sortie")
-st.write("Saisie des informations concernant le jeu")
+st.title("👾 GameForecast: Prédir les performances de votre jeu à sa sortie 👾")
+st.write("🕹️ Saisie des informations concernant le jeu 🕹️")
 
 # Création des champs de texte
 for name, label in text_col_names:
