@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # Définition des noms des colonnes et leurs étiquettes correspondantes
-text_col_names = [("App_ID", "ID de l'application"), ("Release_Date", "Date de sortie"), ("Supported_Languages", "Langues supportées"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs"), ("Categories", "Catégories")]
+text_col_names = [("App_ID", "ID de l'application"), ("Supported_Languages", "Langues supportées"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs"), ("Categories", "Catégories")]
 genre_options = ['Action', 'Casual', 'Indie', 'RPG', 'Simulation', 'Adventure',
                  'Strategy', 'Design & Illustration', 'Video Production',
                  'Early Access', 'Massively Multiplayer', 'Free to Play', 'Sports',
@@ -30,7 +30,7 @@ user_input = {}
 all_fields_filled = True  # Indicateur si tous les champs requis sont remplis
 
 st.title("GameForecast: Prédir les performances de votre jeu à sa sortie")
-st.write("Saisie des informations du jeu")
+st.write("Saisie des informations concernant le jeu")
 
 # Création des champs de texte
 for name, label in text_col_names:
@@ -43,6 +43,8 @@ for name, label in text_col_names:
         if user_input[name] == "Aucune":  # Assigner None si le champ est vide
             user_input[name] = None
 
+user_input['Release_Date'] = st.date_input("Date de sortie", key='Release_Date')
+
 # Ajout des listes déroulantes pour genres et catégories (ces champs ne sont pas marqués comme obligatoires)
 user_input['Genres'] = st.multiselect('Genres', genre_options, key='Genres')
 user_input['Categories'] = st.multiselect('Catégories', category_options, key='Categories')
@@ -53,7 +55,6 @@ bool_cols = st.columns(len(bool_col_names))
 for col, name in zip(bool_cols, bool_col_names):
     user_input[name] = col.checkbox(name, key=name)
 
-st.write("Numériques :")
 num_cols = st.columns(len(num_col_names))
 for col, (name, label) in zip(num_cols, num_col_names):
     user_input[name] = col.number_input(label, min_value=0.0 if name == "Price" else 0, value=0.0 if name == "Price" else 0, step=0.01 if name == "Price" else 1, key=name)
