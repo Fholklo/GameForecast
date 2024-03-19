@@ -4,3 +4,16 @@ requests
 
 #API
 fastapi
+
+#registry
+glob
+os
+time
+pickle
+colorama
+tensorflow
+numpy==1.23.5
+pandas==1.5.3
+scikit-learn==1.3.1
+google-cloud-storage
+

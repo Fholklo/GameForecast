@@ -7,7 +7,7 @@ from colorama import Fore, Style
 from tensorflow import keras
 from scripts.params import *
 from google.cloud import storage
-import mlflow
+
 
 
 def save_results(params: dict, metrics: dict) -> None:
