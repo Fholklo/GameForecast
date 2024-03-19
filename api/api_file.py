@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 import pandas as pd
 
+from ml_logics.registry import *
+
 app = FastAPI()
-app.state.model_rating = load_model(model_rating)
-app.state.model_player_r = load_model(model_player_release)
+app.state.model_rating = load_model("model_rating")
+app.state.model_player_r = load_model("model_player_r")
 
 @app.get("/")
 def root():
