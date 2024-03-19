@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from package.scripts.params import genre_options, category_options, languages_options, required_fields
+from package.scripts.params import *
 from package.scripts.utils import verify_required_fields
 
 # Définition des noms des colonnes et leurs étiquettes correspondantes
