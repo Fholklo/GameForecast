@@ -39,6 +39,9 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) -> pd.DataFrame:
     '''clean the features before entering pipelines'''
 
     Y = clean_target(data_Y)
+    Y = only_last_month_v1_target(Y)
+
+    data_X = data_X[FEATURE_SELECTION_V1]
 
     # consistent features - target
     data_X = data_X[data_X['App_ID'].isin(Y['App_ID'])]
