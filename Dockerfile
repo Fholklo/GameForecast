@@ -5,11 +5,11 @@ COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 # Then only, install taxifare!
-COPY 
+COPY package package
 COPY setup.py setup.py
-RUN pip install .
+RUN pip install -e .
 
 COPY Makefile Makefile
 RUN make reset_local_files
 
-CMD uvicorn taxifare.api.fast:app --host 0.0.0.0 --port $PORT
+CMD uvicorn package.api_file:app --host 0.0.0.0 --port $PORT
