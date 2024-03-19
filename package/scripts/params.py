@@ -47,3 +47,7 @@ category_options = ['Single-player', 'Steam Cloud', 'Family Sharing', 'Steam Ach
                     'Valve Anti-Cheat enabled', 'LAN Co-op', 'Steam Turn Notifications',
                     'HDR available', 'LAN PvP', 'Commentary available', 'Includes Source SDK',
                     'SteamVR Collectibles', 'Mods', 'Mods (require HL2)']
+
+languages_options = ["German", "French", "Italian", 'Spanish - Spain', "Portuguese - Portugal", 'English',
+                     'Simplified Chinese', 'Russian', 'Japanese', 'Korean', 'Traditional Chinese',
+                     'Portuguese - Brazil', 'Polish', 'Turkish']

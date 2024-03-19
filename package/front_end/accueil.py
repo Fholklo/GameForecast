@@ -3,25 +3,9 @@ import requests
 from scripts.params import *
 
 # Définition des noms des colonnes et leurs étiquettes correspondantes
-text_col_names = [("App_ID", "ID du jeu"), ("Supported_Languages", "Langues supportées"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs")]
+text_col_names = [("App_ID", "ID du jeu"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs")]
 bool_col_names = ["Windows", "Mac", "Linux"]
 num_col_names = [("Achievements", "Nombre de succès disponibles"), ("Price", "Prix en euros")]
-
-# URL de l'image d'arrière-plan
-background_url = "URL_DE_VOTRE_IMAGE"
-
-# CSS pour utiliser l'image d'arrière-plan
-background_css = f"""
-<style>
-    .stApp {{
-        background-image: url({background_url});
-        background-size: cover;
-    }}
-</style>
-"""
-# Appliquer le CSS personnalisé avec l'image d'arrière-plan
-st.markdown(background_css, unsafe_allow_html=True)
-
 
 # Dictionnaire pour stocker les entrées de l'utilisateur
 user_input = {}
@@ -44,6 +28,7 @@ for name, label in text_col_names:
 user_input['Release_Date'] = st.date_input("Date de sortie", key='Release_Date')
 
 # Ajout des listes déroulantes pour genres et catégories (ces champs ne sont pas marqués comme obligatoires)
+user_input['Supported_Languages'] = st.multiselect('Langues disponibles', languages_options, key='Supported_Languages')
 user_input['Genres'] = st.multiselect('Genres', genre_options, key='Genres')
 user_input['Categories'] = st.multiselect('Catégories', category_options, key='Categories')
 
