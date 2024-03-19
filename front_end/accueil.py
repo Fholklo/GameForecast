@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # Définition des noms des colonnes et leurs étiquettes correspondantes
-text_col_names = [("App_ID", "ID de l'application"), ("Supported_Languages", "Langues supportées"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs"), ("Categories", "Catégories")]
+text_col_names = [("App_ID", "ID du jeu"), ("Supported_Languages", "Langues supportées"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs"), ("Categories", "Catégories")]
 genre_options = ['Action', 'Casual', 'Indie', 'RPG', 'Simulation', 'Adventure',
                  'Strategy', 'Design & Illustration', 'Video Production',
                  'Early Access', 'Massively Multiplayer', 'Free to Play', 'Sports',
