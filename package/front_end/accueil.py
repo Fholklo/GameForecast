@@ -1,29 +1,37 @@
 import streamlit as st
 import requests
-from scripts.params import *
+from scripts.params import genre_options, category_options, languages_options, required_fields
+from scripts.utils import verify_required_fields
 
 # Définition des noms des colonnes et leurs étiquettes correspondantes
-text_col_names = [("App_ID", "ID du jeu"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs")]
+text_col_names = [("App_ID", "ID du jeu"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs")]
 bool_col_names = ["Windows", "Mac", "Linux"]
 num_col_names = [("Achievements", "Nombre de succès disponibles"), ("Price", "Prix en euros")]
 
 # Dictionnaire pour stocker les entrées de l'utilisateur
 user_input = {}
-all_fields_filled = True  # Indicateur si tous les champs requis sont remplis
 
 st.title("👾 GameForecast: Prédir les performances de votre jeu à sa sortie 👾")
 st.write("🕹️ Saisie des informations concernant le jeu 🕹️")
 
 # Création des champs de texte
-for name, label in text_col_names:
-    if name != "Support_URL":  # Les champs URL du support et Categories ne sont pas obligatoires
-        user_input[name] = st.text_input(label, key=name)
-        if user_input[name] == "":  # Vérifie si le champ obligatoire est vide
-            all_fields_filled = False
-    elif name == "Support_URL":  # Gestion spéciale pour URL du support
-        user_input[name] = st.text_input(label, key=name, value="Aucune")
-        if user_input[name] == "Aucune":  # Assigner None si le champ est vide
-            user_input[name] = None
+col1, col2, col3 = st.columns(3)
+
+# Assign the text to each column
+with col1:
+    user_input[text_col_names[0][0]] = st.text_input(text_col_names[0][1], key=text_col_names[0][0])
+
+with col2:
+    user_input[text_col_names[1][0]] = st.text_input(text_col_names[1][1], key=text_col_names[1][0])
+
+with col3:
+    user_input[text_col_names[2][0]] = st.text_input(text_col_names[2][1], key=text_col_names[2][0])
+
+
+#autres paramètres
+user_input["Support_URL"] = st.text_input("URL du support", key="Support_URL", value="Aucune")
+if user_input["Support_URL"] == "Aucune":  # Assigner None si le champ est vide
+    user_input["Support_URL"] = None
 
 user_input['Release_Date'] = st.date_input("Date de sortie", key='Release_Date')
 
@@ -44,17 +52,26 @@ for col, (name, label) in zip(num_cols, num_col_names):
 
 # Bouton pour envoyer les données
 if st.button('Prédiction du rating'):
+    all_fields_filled = verify_required_fields(user_input, required_fields)
     if all_fields_filled:
         api_endpoint = 'your_api_endpoint'
         response = requests.post(api_endpoint, json=user_input)
-        st.write(response.text)
+        if response.ok:
+            st.write(response.text)
+        else:
+            st.error("Une erreur s'est produite avec l'API.")
     else:
         st.error("Veuillez remplir tous les champs.")
 
 if st.button('Prédiction du nombre de joueurs à la sortie'):
+    all_fields_filled = verify_required_fields(user_input, required_fields)
     if all_fields_filled:
         api_endpoint = 'your_api_endpoint'
         response = requests.post(api_endpoint, json=user_input)
-        st.write(response.text)
+        if response.ok:
+            st.write(response.text)
+        else:
+            st.error("Une erreur s'est produite avec l'API.")
     else:
         st.error("Veuillez remplir tous les champs.")
+
