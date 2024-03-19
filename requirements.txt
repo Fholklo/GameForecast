@@ -6,8 +6,6 @@ requests
 fastapi
 
 #registry
-
-os
 time
 pickle
 colorama
