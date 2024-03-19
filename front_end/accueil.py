@@ -1,27 +1,9 @@
 import streamlit as st
 import requests
+from scripts.params import *
 
 # Définition des noms des colonnes et leurs étiquettes correspondantes
-text_col_names = [("App_ID", "ID du jeu"), ("Supported_Languages", "Langues supportées"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs"), ("Categories", "Catégories")]
-genre_options = ['Action', 'Casual', 'Indie', 'RPG', 'Simulation', 'Adventure',
-                 'Strategy', 'Design & Illustration', 'Video Production',
-                 'Early Access', 'Massively Multiplayer', 'Free to Play', 'Sports',
-                 'Animation & Modeling', 'Utilities', 'Game Development',
-                 'Photo Editing', 'Software Training', 'Nudity', 'Violent',
-                 'Racing', 'Gore', 'Sexual Content', 'Audio Production',
-                 'Web Publishing', 'Movie', 'Education', 'Accounting']
-category_options = ['Single-player', 'Steam Cloud', 'Family Sharing', 'Steam Achievements',
-                    'Partial Controller Support', 'Full controller support', 'Multi-player',
-                    'Steam Trading Cards', 'Steam Workshop', 'Co-op', 'Online Co-op',
-                    'Steam Leaderboards', 'PvP', 'Online PvP', 'Remote Play on Phone',
-                    'Remote Play on Tablet', 'Remote Play on TV', 'In-App Purchases',
-                    'Tracked Controller Support', 'VR Only', 'MMO', 'Cross-Platform Multiplayer',
-                    'Stats', 'Includes level editor', 'Shared/Split Screen',
-                    'Remote Play Together', 'No', 'VR Supported', 'Captions available',
-                    'VR Support', 'Shared/Split Screen PvP', 'Shared/Split Screen Co-op',
-                    'Valve Anti-Cheat enabled', 'LAN Co-op', 'Steam Turn Notifications',
-                    'HDR available', 'LAN PvP', 'Commentary available', 'Includes Source SDK',
-                    'SteamVR Collectibles', 'Mods', 'Mods (require HL2)']
+text_col_names = [("App_ID", "ID du jeu"), ("Supported_Languages", "Langues supportées"), ("Support_URL", "URL du support"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs")]
 bool_col_names = ["Windows", "Mac", "Linux"]
 num_col_names = [("Achievements", "Nombre de succès disponibles"), ("Price", "Prix en euros")]
 
@@ -50,7 +32,7 @@ st.write("🕹️ Saisie des informations concernant le jeu 🕹️")
 
 # Création des champs de texte
 for name, label in text_col_names:
-    if name != "Support_URL" and name != "Categories":  # Les champs URL du support et Categories ne sont pas obligatoires
+    if name != "Support_URL":  # Les champs URL du support et Categories ne sont pas obligatoires
         user_input[name] = st.text_input(label, key=name)
         if user_input[name] == "":  # Vérifie si le champ obligatoire est vide
             all_fields_filled = False
