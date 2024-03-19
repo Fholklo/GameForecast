@@ -71,6 +71,6 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) -> pd.DataFrame:
     data_X.Rating.fillna(0,inplace=True)
 
     Y_rating = data_X[['App_ID','Rating']]
-    data_X.drop(columns=['TotalReviews', 'ReviewScore'],inplace=True)
+    data_X.drop(columns=['TotalReviews', 'ReviewScore','Positive','Negative'],inplace=True)
 
     return data_X, Y_rating, Y
