@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
-from scripts.params import genre_options, category_options, languages_options, required_fields
-from scripts.utils import verify_required_fields
+from package.scripts.params import genre_options, category_options, languages_options, required_fields
+from package.scripts.utils import verify_required_fields
 
 # Définition des noms des colonnes et leurs étiquettes correspondantes
 text_col_names = [("App_ID", "ID du jeu"), ("Developers", "Développeurs"), ("Publishers", "Éditeurs")]
@@ -74,4 +74,3 @@ if st.button('Prédiction du nombre de joueurs à la sortie'):
             st.error("Une erreur s'est produite avec l'API.")
     else:
         st.error("Veuillez remplir tous les champs.")
-
