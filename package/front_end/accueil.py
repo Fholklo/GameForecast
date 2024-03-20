@@ -48,7 +48,7 @@ for col, name in zip(bool_cols, bool_col_names):
 num_cols = st.columns(len(num_col_names))
 for col, (name, label) in zip(num_cols, num_col_names):
     user_input[name] = col.number_input(label, min_value=0.0 if name == "Price" else 0, value=0.0 if name == "Price" else 0, step=0.01 if name == "Price" else 1, key=name)
-
+st.write(user_input)
 # Bouton pour envoyer les données
 if st.button('Prédiction du rating'):
     all_fields_filled = verify_required_fields(user_input, required_fields)
