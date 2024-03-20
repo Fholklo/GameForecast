@@ -1,15 +1,4 @@
-pytest
-pylint
-ipdb
-jupyterlab
-jupyter
-numpy
-pandas
-matplotlib
-seaborn
-scikit-learn
-statsmodels
-datetime
+#Front end
+streamlit
+requests
 
-# DEEP LEARNING
-tensorflow==2.10.0
