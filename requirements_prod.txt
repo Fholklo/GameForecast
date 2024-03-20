@@ -2,8 +2,6 @@
 fastapi
 
 #registry
-
-
 colorama
 tensorflow
 numpy==1.23.5

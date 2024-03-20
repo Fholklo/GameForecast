@@ -83,3 +83,7 @@ EUROPEAN_LANGUAGES = ["German", "French", "Italian", 'Spanish - Spain', "Portugu
 TOP_LANGUAGES = 10
 
 percent_categories = 0.1
+
+days_in_year = 365.25  # moyenne en tenant compte des années bissextiles
+
+months_in_year = 12
