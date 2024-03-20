@@ -8,8 +8,6 @@ from tensorflow import keras
 from scripts.params import *
 from google.cloud import storage
 
-
-
 def save_results(params: dict, metrics: dict) -> None:
     """
     Persist params & metrics locally on the hard drive at
