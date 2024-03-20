@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import pandas as pd
 
 from ml_logics.registry import *
+from main import preprocess
 
 app = FastAPI()
 app.state.model_rating = load_model("model_rating")
@@ -46,7 +47,7 @@ def predict_rating(
         price= [price]
     ))
 
-    X_pred_preprocess = preprocess(X_pred)
+    X_pred_preprocess, _ = preprocess(X_pred)
     y_pred = app.state.model_rating.predict(X_pred_preprocess)
 
     return {"Rating" : float(y_pred)}
@@ -88,7 +89,7 @@ def predict_player_release(
         price= [price]
     ))
 
-    X_pred_preprocess = preprocess(X_pred)
+    X_pred_preprocess, _ = preprocess(X_pred)
     y_pred = app.state.model_player_r.predict(X_pred_preprocess)
 
     return {"Peak player" : float(y_pred)}
