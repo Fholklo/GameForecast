@@ -1,6 +1,6 @@
-import numpy as np
 import pandas as pd
 from datetime import datetime
+import numpy as np
 
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import RobustScaler, StandardScaler, MinMaxScaler
@@ -71,16 +71,16 @@ def transform_language_features(data_X: pd.DataFrame) -> pd.DataFrame:
 
     return data_X
 
-def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) -> pd.DataFrame:
+def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     '''clean the features before entering pipelines'''
 
     Y_clean = clean_target(data_Y)
-    Y = only_last_month_v1_target(Y_clean)
+    y = only_last_month_v1_target(Y_clean)
 
     data_X = data_X[FEATURE_SELECTION_V1]
 
     # consistent features - target
-    data_X = data_X[data_X['App_ID'].isin(Y['App_ID'])]
+    data_X = data_X[data_X['App_ID'].isin(y['App_ID'])]
     data_X['Release_Date'] = pd.to_datetime(data_X['Release_Date'])
 
     # keep only games with at least english language
@@ -135,15 +135,15 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) -> pd.DataFrame:
 
     data_X.sort_values(by='App_ID',inplace=True)
     Y_rating.sort_values(by='App_ID',inplace=True)
-    Y.sort_values(by='App_ID',inplace=True)
+    y.sort_values(by='App_ID',inplace=True)
 
-    Y = Y[Y['App_ID'].isin(data_X['App_ID'])]
+    y = y[y['App_ID'].isin(data_X['App_ID'])]
 
     data_X.reset_index(drop=True,inplace=True)
     Y_rating.reset_index(drop=True,inplace=True)
-    Y.reset_index(drop=True,inplace=True)
+    y.reset_index(drop=True,inplace=True)
 
-    return data_X, Y_rating, Y
+    return data_X, Y_rating, y
 
 def full_preprocessor():
     """Create a pipeline to preprocess data"""
@@ -175,8 +175,8 @@ def full_preprocessor():
     ])
     # Full_preprocessor
     preprocessor = ColumnTransformer([
-        ("num_pipeline", numerical_pipeline, make_column_selector(dtype_include="number")), # num_features
-        ("cat_pipeline", categorical_pipeline, make_column_selector(dtype_exclude="number")) # cat_features
+        ("num_pipeline", numerical_pipeline, make_column_selector(dtype_include="number")), # num_features # type: ignore
+        ("cat_pipeline", categorical_pipeline, make_column_selector(dtype_exclude="number")) # cat_features # type: ignore
     ], remainder="passthrough").set_output(transform="pandas")
 
 
