@@ -81,3 +81,5 @@ UNIQUE_LANGUAGE = ["english",'French', 'german', 'italian', 'spanish - spain',
 EUROPEAN_LANGUAGES = ["German", "French", "Italian", 'Spanish - Spain', "Portuguese - Portugal"]
 
 TOP_LANGUAGES = 10
+
+percent_categories = 0.1
