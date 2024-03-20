@@ -16,10 +16,10 @@ pylint
 ipdb
 jupyterlab
 jupyter
-numpy
-pandas
 matplotlib
 seaborn
-scikit-learn
 statsmodels
 datetime
+uvicorn
+python-multipart
+

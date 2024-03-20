@@ -8,6 +8,7 @@ from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.compose import ColumnTransformer, make_column_selector
 
+
 from package.scripts.params import *
 
 def clean_target(data:pd.DataFrame) -> pd.DataFrame :
@@ -71,49 +72,23 @@ def transform_language_features(data_X: pd.DataFrame) -> pd.DataFrame:
 
     return data_X
 
-def assign_category_developer(count:int)-> int:
-    if count == 0:
-        return "0"
-    elif count == 1:
-        return "1"
-    elif count == 2:
-        return "2"
-    elif count == 3:
-        return "3"
-    elif count == 4:
-        return "4"
-    elif count == 5:
-        return "5"
-    elif 6 <= count <= 10:
-        return "6"
-    elif 11 <= count <= 20:
-        return "7"
-    else:  # Plus de 20
-        return "8"
-
-def assign_category_publisher(count:int)-> int:
-    if count == 0:
-        return "0"
-    elif count == 1:
-        return "1"
-    elif count == 2:
-        return "2"
-    elif count == 3:
-        return "3"
-    elif count == 4:
-        return "4"
-    elif count == 5:
-        return "5"
-    elif 6 <= count <= 10:
-        return "6"
-    else:  # Plus de 10
-        return "7"
-
 
 def clean_data(data_X:pd.DataFrame) :
     '''clean the features before entering pipelines'''
 
-    data_X = data_X[FEATURE_SELECTION_V1]
+    data_X = data_X[FEATURE_SELECTION_V1].copy()
+
+
+    #Supported_Languages processing
+    data_X.Supported_Languages.fillna('Missing',inplace=True)
+    data_X['Supported_Languages'] = data_X['Supported_Languages'].apply(lambda x: x.split(', '))
+    for language in languages:
+        data_X[language] = data_X['Supported_Languages'].apply(lambda x: 1 if language in x else 0)
+    data_X['Autre_lang'] = data_X['Supported_Languages'].apply(lambda x: 1 if len(set(x) - set(languages)) > 0 else 0)
+    # Ajouter des colonnes manquantes pour les genres qui ne sont pas présents dans le jeu
+    missing_languages = list(set(languages) - set(data_X.columns))
+    for language in missing_languages:
+        data_X[language] = 0
 
     data_X['Release_Date'] = pd.to_datetime(data_X['Release_Date'])
 
@@ -125,68 +100,89 @@ def clean_data(data_X:pd.DataFrame) :
     data_X.drop(columns="Release_Date",inplace=True)
 
     # keep only games with at least english language
-    data_X = transform_language_features(data_X)
+    #data_X = transform_language_features(data_X)
 
     #catégories pour dévelopers
-    developer_counts = data_X['Developers'].groupby(data_X['Developers']).transform('count')
-    data_X["dev_category"] = developer_counts.apply(assign_category_developer)
-    data_X.drop(columns="Developers", inplace=True)
+    data_X['Developers'] = data_X['Developers'].fillna(-1)
+    def get_category_by_dev(developer_name):
+        return developer_categories_dict.get(developer_name, -1)
+    data_X['Developers'] = data_X['Developers'].apply(get_category_by_dev)
+    data_X['Developers'] = data_X['Developers'].astype(float)
+
+    #developer_counts = data_X['Developers'].groupby(data_X['Developers']).transform('count')
+    #data_X["dev_category"] = developer_counts.apply(assign_category_developer)
+    #data_X.drop(columns="Developers", inplace=True)
 
     #catégories pour publisher
-    developer_counts = data_X['Publishers'].groupby(data_X['Publishers']).transform('count')
-    data_X["publi_category"] = developer_counts.apply(assign_category_developer)
-    data_X.drop(columns="Publishers", inplace=True)
+    data_X['Publishers'] = data_X['Publishers'].fillna(-1)
+    def get_category_by_pub(publisher_name):
+        return publishers_category_dict.get(publisher_name, -1)
+    data_X['Publishers'] = data_X['Publishers'].apply(get_category_by_pub)
+    data_X['Publishers'] = data_X['Publishers'].astype(float)
+
+    #developer_counts = data_X['Publishers'].groupby(data_X['Publishers']).transform('count')
+    #data_X["publi_category"] = developer_counts.apply(assign_category_developer)
+    #data_X.drop(columns="Publishers", inplace=True)
 
     # transform support url with 1 if contains something, 0 otherwise
     data_X.Support_URL = data_X['Support_URL'].apply(lambda x: 0 if x!=x else 1)
-
     # encode bool values
     data_X.Windows = data_X.Windows.apply(lambda x: 1 if x==True else 0)
     data_X.Linux = data_X.Linux.apply(lambda x: 1 if x==True else 0)
     data_X.Mac = data_X.Mac.apply(lambda x: 1 if x==True else 0)
 
-    # handle categorical columns before encoding
-    data_X.Genres.fillna('No',inplace=True)
-    data_X.Genres = data_X.Genres.apply(lambda x: ''.join(x).split(','))
-    data_X.Categories.fillna('No', inplace=True)
-    data_X.Categories = data_X.Categories.apply(lambda x: ''.join(x).split(','))
     # handle numerical columns before encoding
     data_X.loc[:, 'Achievements'] = data_X['Achievements'].fillna(0)
+    data_X.Achievements.replace('None',0,inplace=True)
+    data_X.Achievements = data_X.Achievements.astype(dtype='int64')
 
     data_X = data_X[data_X.Price != 'None']
     data_X.Price = data_X.Price.astype(dtype='float64')
 
-    # Compute Rating for Y_rating target
-    data_X['TotalReviews'] = data_X['Positive'] + data_X['Negative']
-    data_X['ReviewScore'] = data_X['Positive'] / data_X['TotalReviews']
-    data_X['Rating'] = data_X['ReviewScore'] - (data_X['ReviewScore'] - 0.5) * 2 ** (- np.log10(data_X['TotalReviews']) + 1)
-    data_X.Rating.fillna(0,inplace=True)
+    # handle categorical columns before encoding
+    data_X.Genres.fillna('Missing',inplace=True)
+    data_X['Genres'] = data_X['Genres'].apply(lambda x: x.split(','))
+    for genre in genre_options:
+        data_X[genre] = data_X['Genres'].apply(lambda x: 1 if genre in x else 0)
+    data_X['Autre_genre'] = data_X['Genres'].apply(lambda x: 1 if len(set(x) - set(genre_options)) > 0 else 0)
+    # Ajouter des colonnes manquantes pour les genres qui ne sont pas présents dans le jeu
+    missing_genres = list(set(genre_options) - set(data_X.columns))
+    for genre in missing_genres:
+        data_X[genre] = 0
 
-    data_X.drop(columns=['TotalReviews', 'ReviewScore','Positive','Negative','Supported_Languages'],inplace=True)
+    #data_X.Genres = data_X.Genres.apply(lambda x: ''.join(x).split(','))
+    #exploded_data = data_X.Genres.explode()
+    #one_hot_encoded_df = pd.get_dummies(exploded_data).groupby(level=0).sum()
+    #data_X = pd.concat([data_X,one_hot_encoded_df],axis=1)
+    #data_X.drop(columns='Genres',inplace=True)
 
-    data_X.Achievements.replace('None',0,inplace=True)
-    data_X.Achievements = data_X.Achievements.astype(dtype='int64')
+    data_X.Categories.fillna('Missing',inplace=True)
+    data_X['Categories'] = data_X['Categories'].apply(lambda x: x.split(','))
+    for categorie in category_options:
+        data_X[categorie] = data_X['Categories'].apply(lambda x: 1 if categorie in x else 0)
+    data_X['Autre_cat'] = data_X['Categories'].apply(lambda x: 1 if len(set(x) - set(category_options)) > 0 else 0)
+    # Ajouter des colonnes manquantes pour les genres qui ne sont pas présents dans le jeu
+    missing_categories = list(set(category_options) - set(data_X.columns))
+    for categorie in missing_categories:
+        data_X[categorie] = 0
 
-    exploded_data = data_X.Genres.explode()
-    one_hot_encoded_df = pd.get_dummies(exploded_data).groupby(level=0).sum()
-    data_X = pd.concat([data_X,one_hot_encoded_df],axis=1)
-    data_X.drop(columns='Genres',inplace=True)
-
-    categories = data_X.Categories.explode().value_counts()/len(data_X.Categories) > percent_categories
-    true_categories = categories[categories].index.tolist()
-    data_X['autre_cat'] = data_X.Categories.apply(lambda x: [c for c in x if c not in true_categories])
+    #data_X.Categories.fillna('No', inplace=True)
+    #data_X.Categories = data_X.Categories.apply(lambda x: ''.join(x).split(','))
+    #categories = data_X.Categories.explode().value_counts()/len(data_X.Categories) > percent_categories
+    #true_categories = categories[categories].index.tolist()
+    #data_X['autre_cat'] = data_X.Categories.apply(lambda x: [c for c in x if c not in true_categories])
     # Filtrer les catégories pour encoder seulement celles présentes dans true_categories
-    data_X['Categories'] = data_X.Categories.apply(lambda x: [c for c in x if c in true_categories])
+    #data_X['Categories'] = data_X.Categories.apply(lambda x: [c for c in x if c in true_categories])
     # Encoder les catégories
-    exploded_data = data_X.Categories.explode()
-    one_hot_encoded_df = pd.get_dummies(exploded_data).groupby(level=0).sum()
-
+    #exploded_data = data_X.Categories.explode()
+    #one_hot_encoded_df = pd.get_dummies(exploded_data).groupby(level=0).sum()
     #mise en forme de "autre"
-    data_X["autre_cat"] = data_X["autre_cat"].apply(lambda x: 1 if x else 0)
+    #data_X["autre_cat"] = data_X["autre_cat"].apply(lambda x: 1 if x else 0)
+
 
     # Ajouter les catégories encodées à data_X
-    data_X = pd.concat([data_X, one_hot_encoded_df], axis=1)
-    data_X.drop(columns=["Categories"],inplace = True)
+    #data_X = pd.concat([data_X, one_hot_encoded_df], axis=1)
+    data_X.drop(columns=["App_ID","Categories","Genres","Supported_Languages"],inplace = True)
 
     #data_X.sort_values(by='App_ID',inplace=True)
     #Y_rating.sort_values(by='App_ID',inplace=True)
@@ -196,19 +192,16 @@ def clean_data(data_X:pd.DataFrame) :
     #Y_rating.reset_index(drop=True,inplace=True)
     #y.reset_index(drop=True,inplace=True)
 
-    App_ID = data_X[['App_ID','Rating']].copy()
-
-    data_X.drop(columns=["App_ID","Rating"],inplace=True)
     #Y_rating.drop(columns="App_ID",inplace=True)
     #y.drop(columns="App_ID",inplace=True)
 
-    return data_X, App_ID
+    return data_X
 
 def full_preprocessor():
     """Create a pipeline to preprocess data"""
 
     # numerical features
-    robust_features = ["Price", "Achievements"]
+    robust_features = ["Price", "Achievements","year"]
     # numerical pipeline
     scalers = ColumnTransformer([
         ("rob", RobustScaler(), robust_features), # Robust
@@ -219,7 +212,7 @@ def full_preprocessor():
         ("scalers", scalers)
     ])
     # categorical features
-    ordinal_features = ["publi_category", "dev_category"]
+    ordinal_features = ["Developers", "Publishers"]
     # categorical pipeline
     encoders = ColumnTransformer([
         ("ordinal",OrdinalEncoder(categories="auto", handle_unknown="use_encoded_value",unknown_value=-1)
@@ -232,8 +225,8 @@ def full_preprocessor():
     ])
     # Full_preprocessor
     preprocessor = ColumnTransformer([
-        ("num_pipeline", numerical_pipeline, make_column_selector(dtype_include="number")), # num_features # type: ignore
-        ("cat_pipeline", categorical_pipeline, make_column_selector(dtype_exclude="number")) # cat_features # type: ignore
+        ("num_pipeline", numerical_pipeline, ["Price", "Achievements","year"]), # num_features # type: ignore
+        ("cat_pipeline", categorical_pipeline, ['Developers', 'Publishers']) # cat_features # type: ignore
     ], remainder="passthrough").set_output(transform="pandas")
 
 

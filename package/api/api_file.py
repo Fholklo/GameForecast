@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 import pandas as pd
+from tensorflow import keras
 
-from ml_logics.registry import *
-from main import preprocess
+#from package.ml_logics.registry import *
+from package.main import preprocess
 
 app = FastAPI()
-app.state.model_rating = load_model("model_rating")
-app.state.model_player_r = load_model("model_player_r")
+#app.state.model_rating = load_model("model_rating")
+app.state.model_rating =keras.models.load_model("model_rating_20240320-232349.h5")
+#app.state.model_player_r = load_model("model_player_r")
 
 @app.get("/")
 def root():
@@ -14,15 +16,13 @@ def root():
 
 @app.get("/predict_rating")
 def predict_rating(
-    App_ID: int, #1546456
     supported_languages: str, # English, French, etc..
     support_url: str, # url du support
     developers: str, #ankama
     publishers: str, #bob
-    categories: str, #Single-player
     release_date: str, #"2024-01-31"
-    genres: list, #["genre1","genre2","genre3"]
-    categorie: list, #["categories1","categories2"]
+    genres: str, #["genre1","genre2","genre3"]
+    categorie: str, #["categories1","categories2"]
     windows: bool, #true
     mac: bool, #false
     linux: bool, #false
@@ -31,12 +31,11 @@ def predict_rating(
     ):
 
     X_pred = pd.DataFrame(dict(
-        App_ID = [App_ID],
         supported_languages = [supported_languages],
         support_url= [support_url],
         developers= [developers],
         publishers= [publishers],
-        categories= [categories],
+        categories= [categorie],
         release_date= [release_date],
         genres= [genres],
         categorie= [categorie],
@@ -44,10 +43,30 @@ def predict_rating(
         mac= [mac],
         linux= [linux],
         achievements= [achievements],
-        price= [price]
+        price= [price],
+        app_id = 0,
+        positive = 0,
+        negative = 0
     ))
+    X_pred.rename(columns={
+    'supported_languages': 'Supported_Languages',
+    'support_url': 'Support_URL',
+    'developers': 'Developers',
+    'publishers': 'Publishers',
+    'categories': 'Categories',
+    'release_date': 'Release_Date',
+    'genres': 'Genres',
+    'windows': 'Windows',
+    'mac': 'Mac',
+    'linux': 'Linux',
+    'achievements': 'Achievements',
+    'price': 'Price',
+    "app_id": "App_ID",
+    "positive":"Positive",
+    "negative": "Negative"
+}, inplace=True)
 
-    X_pred_preprocess, _ = preprocess(X_pred)
+    X_pred_preprocess = preprocess(X_pred)
     y_pred = app.state.model_rating.predict(X_pred_preprocess)
 
     return {"Rating" : float(y_pred)}
