@@ -33,7 +33,7 @@ if user_input["Support_URL"] == "Aucune":  # Assigner None si le champ est vide
     user_input["Support_URL"] = None
 
 user_input['Release_Date'] = st.date_input("Date de sortie", key='Release_Date')
-
+user_input['Release_Date'] = user_input['Release_Date'].isoformat()
 # Ajout des listes déroulantes pour genres et catégories (ces champs ne sont pas marqués comme obligatoires)
 user_input['Supported_Languages'] = st.multiselect('Langues disponibles', languages_options, key='Supported_Languages')
 user_input['Genres'] = st.multiselect('Genres', genre_options, key='Genres')
