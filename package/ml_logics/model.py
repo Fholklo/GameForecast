@@ -3,7 +3,6 @@ import time
 
 from colorama import Fore, Style
 from typing import Tuple
-
 from tensorflow import keras
 from keras import models,layers, regularizers, optimizers
 from keras.callbacks import EarlyStopping
@@ -26,14 +25,11 @@ def initialize_model(input_shape: tuple) :
     model.add(layers.Input(shape=input_shape))
     model.add(layers.Dense(128, activation="relu")) #, kernel_regularizer=reg ?
     #model.add(layers.BatchNormalization(momentum=0.9))
-    model.add(layers.Dropout(rate=0.1))
     model.add(layers.Dense(64, activation="relu"))
-    #model.add(layers.BatchNormalization(momentum=0.9))
-    model.add(layers.Dropout(rate=0.1))
     model.add(layers.Dense(64, activation="relu"))
     model.add(layers.Dropout(rate=0.3))
     model.add(layers.Dense(32, activation="relu"))
-    model.add(layers.Dropout(rate=0.5))
+    model.add(layers.Dropout(rate=0.3))
     model.add(layers.Dense(1, activation="linear"))
 
     print("✅ Model initialized")
@@ -46,7 +42,7 @@ def compile_model(model, learning_rate=0.0005) :
     Compile the Neural Network
     """
     optimizer = optimizers.Adam(learning_rate=learning_rate)
-    model.compile(loss="neg_mean_squared_error", optimizer=optimizer, metrics=["mae","accuracy"])
+    model.compile(loss="mse", optimizer=optimizer, metrics=["mae"])
 
     print("✅ Model compiled")
 
@@ -54,11 +50,11 @@ def compile_model(model, learning_rate=0.0005) :
 
 def train_model(
         model,
-        X: np.ndarray,
-        y: np.ndarray,
-        batch_size=32,
-        patience=5,
-        validation_data=None,
+        X,
+        y,
+        batch_size=128,
+        patience=10,
+        validation_split=0.2,
     ) :
     """
     Fit the model and return a tuple (fitted_model, history)
@@ -75,22 +71,24 @@ def train_model(
     history = model.fit(
         X,
         y,
-        validation_data=validation_data,
+        validation_split=validation_split,
         epochs=100,
         batch_size=batch_size,
         callbacks=[es],
-        verbose=0
+        verbose=1
     )
 
-    print(f"✅ Model trained on {len(X)} rows with min val MAE: {round(np.min(history.history['val_mae']), 2)}")
+    print(f"""✅ Model trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+
+                                    : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
     return model, history
 
 
 def evaluate_model(
         model,
-        X: np.ndarray,
-        y: np.ndarray,
+        X,
+        y,
         batch_size=32
     ) :
     """
@@ -115,6 +113,6 @@ def evaluate_model(
     loss = metrics["loss"]
     mae = metrics["mae"]
 
-    print(f"✅ Model evaluated, MAE: {round(mae, 2)}")
+    print(f"✅ Model evaluated, MAE: {round(mae, 2)}, MSE loss {round(loss, 2)}")
 
     return metrics

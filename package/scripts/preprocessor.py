@@ -150,6 +150,9 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     # handle numerical columns before encoding
     data_X.loc[:, 'Achievements'] = data_X['Achievements'].fillna(0)
 
+    data_X = data_X[data_X.Price != 'None']
+    data_X.Price = data_X.Price.astype(dtype='float64')
+
     # Compute Rating for Y_rating target
     data_X['TotalReviews'] = data_X['Positive'] + data_X['Negative']
     data_X['ReviewScore'] = data_X['Positive'] / data_X['TotalReviews']
@@ -157,10 +160,8 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     data_X.Rating.fillna(0,inplace=True)
 
     Y_rating = data_X[['App_ID','Rating']]
-    data_X.drop(columns=['TotalReviews', 'ReviewScore','Positive','Negative','Supported_Languages',"Rating"],inplace=True)
 
-    data_X = data_X[data_X.Price != 'None']
-    data_X.Price = data_X.Price.astype(dtype='float64')
+    data_X.drop(columns=['TotalReviews', 'ReviewScore','Positive','Negative','Supported_Languages',"Rating"],inplace=True)
 
     data_X.Achievements.replace('None',0,inplace=True)
     data_X.Achievements = data_X.Achievements.astype(dtype='int64')
