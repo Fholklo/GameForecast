@@ -109,16 +109,12 @@ def assign_category_publisher(count:int)-> int:
     else:  # Plus de 10
         return "7"
 
-def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
-    '''clean the features before entering pipelines'''
 
-    Y_clean = clean_target(data_Y)
-    y = only_last_month_v1_target(Y_clean)
+def clean_data(data_X:pd.DataFrame) :
+    '''clean the features before entering pipelines'''
 
     data_X = data_X[FEATURE_SELECTION_V1]
 
-    # consistent features - target
-    data_X = data_X[data_X['App_ID'].isin(y['App_ID'])]
     data_X['Release_Date'] = pd.to_datetime(data_X['Release_Date'])
 
     data_X['day_sin'] = np.sin(2 * np.pi * data_X['Release_Date'].dt.dayofyear / days_in_year)
@@ -157,17 +153,16 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     # handle numerical columns before encoding
     data_X.loc[:, 'Achievements'] = data_X['Achievements'].fillna(0)
 
+    data_X = data_X[data_X.Price != 'None']
+    data_X.Price = data_X.Price.astype(dtype='float64')
+
     # Compute Rating for Y_rating target
     data_X['TotalReviews'] = data_X['Positive'] + data_X['Negative']
     data_X['ReviewScore'] = data_X['Positive'] / data_X['TotalReviews']
     data_X['Rating'] = data_X['ReviewScore'] - (data_X['ReviewScore'] - 0.5) * 2 ** (- np.log10(data_X['TotalReviews']) + 1)
     data_X.Rating.fillna(0,inplace=True)
 
-    Y_rating = data_X[['App_ID','Rating']]
-    data_X.drop(columns=['TotalReviews', 'ReviewScore','Positive','Negative','Supported_Languages',"Rating"],inplace=True)
-
-    data_X = data_X[data_X.Price != 'None']
-    data_X.Price = data_X.Price.astype(dtype='float64')
+    data_X.drop(columns=['TotalReviews', 'ReviewScore','Positive','Negative','Supported_Languages'],inplace=True)
 
     data_X.Achievements.replace('None',0,inplace=True)
     data_X.Achievements = data_X.Achievements.astype(dtype='int64')
@@ -193,20 +188,21 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     data_X = pd.concat([data_X, one_hot_encoded_df], axis=1)
     data_X.drop(columns=["Categories"],inplace = True)
 
-    data_X.sort_values(by='App_ID',inplace=True)
-    Y_rating.sort_values(by='App_ID',inplace=True)
-    y.sort_values(by='App_ID',inplace=True)
+    #data_X.sort_values(by='App_ID',inplace=True)
+    #Y_rating.sort_values(by='App_ID',inplace=True)
+    #y.sort_values(by='App_ID',inplace=True)
 
-    y = y[y['App_ID'].isin(data_X['App_ID'])]
+    #data_X.reset_index(drop=True,inplace=True)
+    #Y_rating.reset_index(drop=True,inplace=True)
+    #y.reset_index(drop=True,inplace=True)
 
-    data_X.reset_index(drop=True,inplace=True)
-    Y_rating.reset_index(drop=True,inplace=True)
-    y.reset_index(drop=True,inplace=True)
-    data_X.drop(columns="App_ID",inplace=True)
-    Y_rating.drop(columns="App_ID",inplace=True)
-    y.drop(columns="App_ID",inplace=True)
+    App_ID = data_X[['App_ID','Rating']].copy()
 
-    return data_X, Y_rating, y
+    data_X.drop(columns=["App_ID","Rating"],inplace=True)
+    #Y_rating.drop(columns="App_ID",inplace=True)
+    #y.drop(columns="App_ID",inplace=True)
+
+    return data_X, App_ID
 
 def full_preprocessor():
     """Create a pipeline to preprocess data"""
