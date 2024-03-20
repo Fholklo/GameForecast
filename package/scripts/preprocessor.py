@@ -64,12 +64,50 @@ def transform_language_features(data_X: pd.DataFrame) -> pd.DataFrame:
 
         data_X[lang] = data_X[lang].astype(int)
 
-    data_X['other'] = ~data_X['Supported_Languages'].str.contains('|'.join(top_languages), case=False, regex=True)
-    data_X['other'] = data_X['other'].astype(int)
+    data_X['other_lang'] = ~data_X['Supported_Languages'].str.contains('|'.join(top_languages), case=False, regex=True)
+    data_X['other_lang'] = data_X['other_lang'].astype(int)
 
     data_X = data_X[data_X['English'] != 0]
 
     return data_X
+
+def assign_category_developer(count:int)-> int:
+    if count == 0:
+        return "0"
+    elif count == 1:
+        return "1"
+    elif count == 2:
+        return "2"
+    elif count == 3:
+        return "3"
+    elif count == 4:
+        return "4"
+    elif count == 5:
+        return "5"
+    elif 6 <= count <= 10:
+        return "6"
+    elif 11 <= count <= 20:
+        return "7"
+    else:  # Plus de 20
+        return "8"
+
+def assign_category_publisher(count:int)-> int:
+    if count == 0:
+        return "0"
+    elif count == 1:
+        return "1"
+    elif count == 2:
+        return "2"
+    elif count == 3:
+        return "3"
+    elif count == 4:
+        return "4"
+    elif count == 5:
+        return "5"
+    elif 6 <= count <= 10:
+        return "6"
+    else:  # Plus de 10
+        return "7"
 
 def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     '''clean the features before entering pipelines'''
@@ -85,6 +123,16 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
 
     # keep only games with at least english language
     data_X = transform_language_features(data_X)
+
+    #catégories pour dévelopers
+    developer_counts = data_X['Developers'].groupby(data_X['Developers']).transform('count')
+    data_X["dev_category"] = developer_counts.apply(assign_category_developer)
+    data_X.drop(columns="Developers", inplace=True)
+
+    #catégories pour publisher
+    developer_counts = data_X['Publishers'].groupby(data_X['Publishers']).transform('count')
+    data_X["publi_category"] = developer_counts.apply(assign_category_developer)
+    data_X.drop(columns="Publishers", inplace=True)
 
     # transform support url with 1 if contains something, 0 otherwise
     data_X.Support_URL = data_X['Support_URL'].apply(lambda x: 0 if x!=x else 1)
@@ -109,7 +157,7 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     data_X.Rating.fillna(0,inplace=True)
 
     Y_rating = data_X[['App_ID','Rating']]
-    data_X.drop(columns=['TotalReviews', 'ReviewScore','Positive','Negative','Supported_Languages'],inplace=True)
+    data_X.drop(columns=['TotalReviews', 'ReviewScore','Positive','Negative','Supported_Languages',"Rating"],inplace=True)
 
     data_X = data_X[data_X.Price != 'None']
     data_X.Price = data_X.Price.astype(dtype='float64')
@@ -122,16 +170,21 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     data_X = pd.concat([data_X,one_hot_encoded_df],axis=1)
     data_X.drop(columns='Genres',inplace=True)
 
-    categories = data_X.Categories.explode().value_counts()/len(data_X.Categories) > 0.10
+    categories = data_X.Categories.explode().value_counts()/len(data_X.Categories) > percent_categories
     true_categories = categories[categories].index.tolist()
-    data_X['autre'] = data_X.Categories.apply(lambda x: [c for c in x if c not in true_categories])
+    data_X['autre_cat'] = data_X.Categories.apply(lambda x: [c for c in x if c not in true_categories])
     # Filtrer les catégories pour encoder seulement celles présentes dans true_categories
     data_X['Categories'] = data_X.Categories.apply(lambda x: [c for c in x if c in true_categories])
     # Encoder les catégories
     exploded_data = data_X.Categories.explode()
     one_hot_encoded_df = pd.get_dummies(exploded_data).groupby(level=0).sum()
+
+    #mise en forme de "autre"
+    data_X["autre_cat"] = data_X["autre_cat"].apply(lambda x: 1 if x else 0)
+
     # Ajouter les catégories encodées à data_X
     data_X = pd.concat([data_X, one_hot_encoded_df], axis=1)
+    data_X.drop(columns=["Categories"],inplace = True)
 
     data_X.sort_values(by='App_ID',inplace=True)
     Y_rating.sort_values(by='App_ID',inplace=True)
@@ -142,6 +195,9 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     data_X.reset_index(drop=True,inplace=True)
     Y_rating.reset_index(drop=True,inplace=True)
     y.reset_index(drop=True,inplace=True)
+    data_X.drop(columns="App_ID",inplace=True)
+    Y_rating.drop(columns="App_ID",inplace=True)
+    y.drop(columns="App_ID",inplace=True)
 
     return data_X, Y_rating, y
 
@@ -153,20 +209,18 @@ def full_preprocessor():
     # numerical pipeline
     scalers = ColumnTransformer([
         ("rob", RobustScaler(), robust_features), # Robust
-    ])
+    ], remainder="passthrough")
 
     numerical_pipeline = Pipeline([
         ("imputer", KNNImputer()),
         ("scalers", scalers)
     ])
     # categorical features
-    onehot_features = ["Genres", "Categories", "Developers", "Publishers"]
+    ordinal_features = ["publi_category", "dev_category"]
     # categorical pipeline
     encoders = ColumnTransformer([
-        ("one_hot", OneHotEncoder(sparse_output=False,
-                                drop="if_binary",
-                                handle_unknown="ignore"),
-        onehot_features) # OHE
+        ("ordinal",OrdinalEncoder(categories="auto", handle_unknown="use_encoded_value",unknown_value=-1)
+         ,ordinal_features)
     ], remainder="passthrough")
 
     categorical_pipeline = Pipeline([

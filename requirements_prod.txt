@@ -2,10 +2,8 @@
 fastapi
 
 #registry
-glob
-os
-time
-pickle
+
+
 colorama
 tensorflow
 numpy==1.23.5
