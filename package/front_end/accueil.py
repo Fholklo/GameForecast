@@ -53,7 +53,7 @@ for col, (name, label) in zip(num_cols, num_col_names):
 if st.button('Prédiction du rating'):
     all_fields_filled = verify_required_fields(user_input, required_fields)
     if all_fields_filled:
-        api_endpoint = 'your_api_endpoint'
+        api_endpoint = SERVICE_URL
         response = requests.post(api_endpoint, json=user_input)
         if response.ok:
             st.write(response.text)
@@ -65,7 +65,7 @@ if st.button('Prédiction du rating'):
 if st.button('Prédiction du nombre de joueurs à la sortie'):
     all_fields_filled = verify_required_fields(user_input, required_fields)
     if all_fields_filled:
-        api_endpoint = 'your_api_endpoint'
+        api_endpoint = SERVICE_URL
         response = requests.post(api_endpoint, json=user_input)
         if response.ok:
             st.write(response.text)
