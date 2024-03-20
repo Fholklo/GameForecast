@@ -1,12 +1,12 @@
-FROM tensorflow/tensorflow:2.10.0
+FROM tensorflow/tensorflow:2.15.0
 
 # First, pip install dependencies
-COPY requirements_prod.txt requirements.txt
-RUN pip install -r requirements.txt
+COPY requirements_prod.txt requirements_prod.txt
+RUN pip install -r requirements_prod.txt
 
 # Then only, install taxifare!
 COPY package package
-COPY setup_copy.py setup.py
+COPY setup.py setup.py
 COPY model_rating_20240320-232349.h5 model_rating_20240320-232349.h5
 RUN pip install -e .
 

@@ -13,6 +13,7 @@ INSTANCE = os.environ.get("INSTANCE")
 GAR_IMAGE = os.environ.get("GAR_IMAGE")
 GAR_MEMORY = os.environ.get("GAR_MEMORY")
 
+
 ############## CONSTANTS ###################
 #Path
 LOCAL_DATA_PATH = os.path.join(os.path.expanduser('~'), ".lewagon", "gameforecast", "data")
