@@ -121,6 +121,13 @@ def clean_data(data_X:pd.DataFrame,data_Y:pd.DataFrame) :
     data_X = data_X[data_X['App_ID'].isin(y['App_ID'])]
     data_X['Release_Date'] = pd.to_datetime(data_X['Release_Date'])
 
+    data_X['day_sin'] = np.sin(2 * np.pi * data_X['Release_Date'].dt.dayofyear / days_in_year)
+    data_X['day_cos'] = np.cos(2 * np.pi * data_X['Release_Date'].dt.dayofyear / days_in_year)
+    data_X['month_sin'] = np.sin(2 * np.pi * data_X['Release_Date'].dt.month / months_in_year)
+    data_X['month_cos'] = np.cos(2 * np.pi * data_X['Release_Date'].dt.month / months_in_year)
+    data_X['year'] = data_X['Release_Date'].dt.year
+    data_X.drop(columns="Release_Date",inplace=True)
+
     # keep only games with at least english language
     data_X = transform_language_features(data_X)
 
