@@ -8,7 +8,7 @@ from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.compose import ColumnTransformer, make_column_selector
 
-from scripts.params import *
+from package.scripts.params import *
 
 def clean_target(data:pd.DataFrame) -> pd.DataFrame :
     '''clean and cut the target'''
