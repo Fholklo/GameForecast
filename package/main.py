@@ -154,16 +154,16 @@ def pred(X_pred: pd.DataFrame = None) -> np.ndarray:
     return y_pred
 """
 
- #if __name__ == '__main__':
-    #data_X, data_Y = get_data()
+if __name__ == '__main__':
+    data_X, data_Y = get_data()
 
-    #X_preprocess = preprocess(data_X)
+    X_preprocess = preprocess(data_X)
 
-    # train(X_preprocess,
-    #         data_Y,
-    #         learning_rate=0.0005,
-    #         batch_size = 128
-    #         patience = 10,
-    #         validation_split = 0.2)
+    train(X_preprocess,
+          data_Y,
+          learning_rate=0.0005,
+          batch_size = 128,
+          patience = 10,
+          validation_split = 0.2)
     #evaluate()
     #pred()
