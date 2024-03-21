@@ -16,10 +16,10 @@ from sklearn.model_selection import train_test_split
 
 def get_data():
     # get the data
-    data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/games_V2.csv")
-    data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/player_one_month_peak_P2.csv")
-
-    return data_X, data_Y
+    data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv")
+    data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_train.csv")
+    y_rating = data_Y["Rating"].copy()
+    return data_X, y_rating
 
 def preprocess(X: pd.DataFrame) -> pd.DataFrame :
     """
@@ -33,7 +33,7 @@ def preprocess(X: pd.DataFrame) -> pd.DataFrame :
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
     # Process data
-    X_clean, App_ID = clean_data(X)
+    X_clean = clean_data(X)
 
     preprocessor = full_preprocessor()
 
@@ -41,21 +41,21 @@ def preprocess(X: pd.DataFrame) -> pd.DataFrame :
 
     print("✅ preprocess() done \n")
 
-    return X_preprocess, App_ID
+    return X_preprocess
 
-def consistency_XY(App_ID: pd.DataFrame, data_Y: pd.DataFrame) -> pd.DataFrame:
-    '''consistent features - target'''
-    #data_X = data_X[data_X['App_ID'].isin(y['App_ID'])]
-    y_rating = App_ID.copy()
-    y = data_Y[data_Y['App_ID'].isin(y_rating['App_ID'])]
+# def consistency_XY(App_ID: pd.DataFrame, data_Y: pd.DataFrame) -> pd.DataFrame:
+#     '''consistent features - target'''
+#     #data_X = data_X[data_X['App_ID'].isin(y['App_ID'])]
+#     y_rating = App_ID.copy()
+#     y = data_Y[data_Y['App_ID'].isin(y_rating['App_ID'])]
 
-    y_rating.drop(columns='App_ID',inplace=True)
-    y.drop(columns='App_ID',inplace=True)
+#     y_rating.drop(columns='App_ID',inplace=True)
+#     y.drop(columns='App_ID',inplace=True)
 
-    return y_rating, y
+#     return y_rating, y
 
-def train(X_preprocess: pd.DataFrame,
-          y: pd.DataFrame,
+def train(X_train_preprocess: pd.DataFrame,
+          y_train: pd.DataFrame,
         learning_rate=0.0005,
         batch_size = 128,
         patience = 10,
@@ -71,9 +71,9 @@ def train(X_preprocess: pd.DataFrame,
     """
 
     # Split training and testing data
-    X_train, X_test, y_train, y_test = train_test_split(X_preprocess, y, test_size=0.30)
+    # X_train, X_test, y_train, y_test = train_test_split(X_preprocess, y, test_size=0.30)
 
-    X_train_tf = tf.convert_to_tensor(X_train.to_numpy(),dtype='float')
+    X_train_tf = tf.convert_to_tensor(X_train_preprocess.to_numpy(),dtype='float')
     y_train_tf = tf.convert_to_tensor(y_train.to_numpy(),dtype='float')
 
     # Train model using `model.py`
@@ -85,7 +85,7 @@ def train(X_preprocess: pd.DataFrame,
     compiled_model = compile_model(model,learning_rate=learning_rate)
 
     trained_model, history = train_model(
-        compiled_model, X_train_tf, y_train,
+        compiled_model, X_train_tf, y_train_tf,
         batch_size=batch_size,
         patience=patience,
         validation_split=validation_split
@@ -157,15 +157,13 @@ def pred(X_pred: pd.DataFrame = None) -> np.ndarray:
 if __name__ == '__main__':
     data_X, data_Y = get_data()
 
-    X_preprocess, App_ID = preprocess(data_X)
-
-    y_rating, y = consistency_XY(App_ID,data_Y)
+    X_preprocess = preprocess(data_X)
 
     train(X_preprocess,
-          y_rating,
-        learning_rate=0.0005,
-        batch_size = 128,
-        patience = 10,
-        validation_split = 0.2)
+          data_Y,
+          learning_rate=0.0005,
+          batch_size = 128,
+          patience = 10,
+          validation_split = 0.2)
     #evaluate()
     #pred()

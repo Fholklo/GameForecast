@@ -5,7 +5,7 @@ import pickle
 
 from colorama import Fore, Style
 from tensorflow import keras
-from scripts.params import *
+from package.scripts.params import *
 from google.cloud import storage
 
 def save_results(params: dict, metrics: dict) -> None:
@@ -51,7 +51,7 @@ def save_model(model_name:str, model: keras.Model = None) -> None:
         model_filename = model_path.split("/")[-1] # e.g. "model_rating_20230208-161047.h5" for instance
         client = storage.Client()
         bucket = client.bucket(BUCKET_NAME)
-        blob = bucket.blob(f"models/{model_filename}")
+        blob = bucket.blob(f"{model_name}/{model_filename}")
         blob.upload_from_filename(model_path)
 
         print("✅ Model saved to GCS")
@@ -98,11 +98,13 @@ def load_model(model_name:str ) -> keras.Model:
 
         client = storage.Client()
 
-        blobs = list(client.get_bucket(BUCKET_NAME).list_blobs(prefix=f"model/{model_name}"))
+        blobs = list(client.get_bucket(BUCKET_NAME).list_blobs(prefix=f"{model_name}/"))
 
         try:
             latest_blob = max(blobs, key=lambda x: x.updated)
+
             latest_model_path_to_save = os.path.join(LOCAL_REGISTRY_PATH, latest_blob.name)
+
             latest_blob.download_to_filename(latest_model_path_to_save)
 
             latest_model = keras.models.load_model(latest_model_path_to_save)

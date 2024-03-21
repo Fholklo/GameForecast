@@ -20,31 +20,31 @@ run_train:
 ##API
 #########
 run_api_local:
-  uvicorn package_folder.api_file:app --host 0.0.0.0
+  uvicorn package.api.api_file:app --host 0.0.0.0
 #########
 ##DOCKER LOCAL
 #########
 build_container_local:
-  docker build --tag=$$IMAGE:dev .
+  docker build --tag=$GAR_IMAGE:dev .
 run_container_local:
-  docker run -it -e PORT=8000 -p 8000:8000 $$IMAGE:dev
+  docker run -it -e PORT=8000 -p 8000:8000 $GAR_IMAGE:dev
 #########
 ##DOCKER DEPLOYMENT
 #########
 # Step 1 (1 time)
 allow_docker_push:
-  gcloud auth configure-docker $$GCP_REGION-docker.pkg.dev
+  gcloud auth configure-docker $GCP_REGION-docker.pkg.dev
 # Step 2 (1 time)
 create_artifacts_repo:
-  gcloud artifacts repositories create $$ARTIFACTSREPO --repository-format=docker \
-  --location=$$GCP_REGION -- description="Repository for sotring images"
+  gcloud artifacts repositories create $ARTIFACTSREPO --repository-format=docker \
+  --location=$GCP_REGION -- description="repo for docker"
 # Step 3
 build_for_production:
-  docker build -t $$GCP_REGION-docker.pkg.dev/$$GCP_PROJECT/$$ARTIFACTSREPO/$$IMAGE:prod .
+  docker build -t $GCP_REGION-docker.pkg.dev/$GCP_PROJECT/$ARTIFACTSREPO/$GAR_IMAGE:prod .
 # Step 4
 push_image_production:
-  docker push $$GCP_REGION-docker.pkg.dev/$$GCP_PROJECT/$$IMAGE:prod
+  docker push $GCP_REGION-docker.pkg.dev/$GCP_PROJECT/$GAR_IMAGE:prod
 # Step 5
 deploy_to_cloud_run:
-  gcloud run deploy --image $$GCP_REGION-docker.pkg.dev/$$GCP_PROJECT/$$ARTIFACTSREPO/$$IMAGE:prod\
-   --memory $$GAR_MEMORY --region $$GCP_REGION
+  gcloud run deploy --image $GCP_REGION-docker.pkg.dev/$GCP_PROJECT/$ARTIFACTSREPO/$GAR_IMAGE:prod\
+   --memory $GAR_MEMORY --region $GCP_REGION

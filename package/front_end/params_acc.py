@@ -25,6 +25,7 @@ languages_options = ["German", "French", "Italian", 'Spanish - Spain', "Portugue
 
 required_fields = ['App_ID', 'Developers', 'Publishers', 'Achievements', 'Price']
 
+SERVICE_URL="https://gameforecast-fquujalnla-ew.a.run.app"
 
 #fonction
 
