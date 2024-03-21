@@ -165,5 +165,5 @@ if __name__ == '__main__':
           batch_size = 128,
           patience = 10,
           validation_split = 0.2)
-    #evaluate()
+    # evaluate()
     #pred()
