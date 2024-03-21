@@ -1,58 +1,107 @@
 import os
+import json
 
 ##################  VARIABLES  ##################
 MODEL_TARGET = os.environ.get("MODEL_TARGET")
 GCP_PROJECT = os.environ.get("GCP_PROJECT")
 GCP_PROJECT_WAGON = os.environ.get("GCP_PROJECT_WAGON")
 GCP_REGION = os.environ.get("GCP_REGION")
-BQ_DATASET = os.environ.get("BQ_DATASET")
-BQ_REGION = os.environ.get("BQ_REGION")
+
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 INSTANCE = os.environ.get("INSTANCE")
 
-PREFECT_FLOW_NAME = os.environ.get("PREFECT_FLOW_NAME")
-PREFECT_LOG_LEVEL = os.environ.get("PREFECT_LOG_LEVEL")
-
 GAR_IMAGE = os.environ.get("GAR_IMAGE")
 GAR_MEMORY = os.environ.get("GAR_MEMORY")
+
 
 ############## CONSTANTS ###################
 #Path
 LOCAL_DATA_PATH = os.path.join(os.path.expanduser('~'), ".lewagon", "gameforecast", "data")
 LOCAL_REGISTRY_PATH =  os.path.join(os.path.expanduser('~'), ".lewagon", "gameforecast", "training_outputs")
 
-
-
 #Data
-genre_options = ['Action', 'Casual', 'Indie', 'RPG', 'Simulation', 'Adventure',
-                 'Strategy', 'Design & Illustration', 'Video Production',
-                 'Early Access', 'Massively Multiplayer', 'Free to Play', 'Sports',
-                 'Animation & Modeling', 'Utilities', 'Game Development',
-                 'Photo Editing', 'Software Training', 'Nudity', 'Violent',
-                 'Racing', 'Gore', 'Sexual Content', 'Audio Production',
-                 'Web Publishing', 'Movie', 'Education', 'Accounting']
-category_options = ['Single-player', 'Steam Cloud', 'Family Sharing', 'Steam Achievements',
-                    'Partial Controller Support', 'Full controller support', 'Multi-player',
-                    'Steam Trading Cards', 'Steam Workshop', 'Co-op', 'Online Co-op',
-                    'Steam Leaderboards', 'PvP', 'Online PvP', 'Remote Play on Phone',
-                    'Remote Play on Tablet', 'Remote Play on TV', 'In-App Purchases',
-                    'Tracked Controller Support', 'VR Only', 'MMO', 'Cross-Platform Multiplayer',
-                    'Stats', 'Includes level editor', 'Shared/Split Screen',
-                    'Remote Play Together', 'No', 'VR Supported', 'Captions available',
-                    'VR Support', 'Shared/Split Screen PvP', 'Shared/Split Screen Co-op',
-                    'Valve Anti-Cheat enabled', 'LAN Co-op', 'Steam Turn Notifications',
-                    'HDR available', 'LAN PvP', 'Commentary available', 'Includes Source SDK',
-                    'SteamVR Collectibles', 'Mods', 'Mods (require HL2)']
 
-languages_options = ["German", "French", "Italian", 'Spanish - Spain', "Portuguese - Portugal", 'English',
-                     'Simplified Chinese', 'Russian', 'Japanese', 'Korean', 'Traditional Chinese',
-                     'Portuguese - Brazil', 'Polish', 'Turkish']
+with open('package/param_json/developer_categories_dict.json', 'r') as json_file:
+    developer_categories_dict = json.load(json_file)
+
+with open('package/param_json/publisher_categories_dict.json', 'r') as json_file2:
+    publishers_category_dict = json.load(json_file2)
+
+# Catégories: nb de jeu par dévelopeur
+#     if count == 0:
+#         return "0"
+#     elif count == 1:
+#         return "1"
+#     elif count == 2:
+#         return "2"
+#     elif count == 3:
+#         return "3"
+#     elif count == 4:
+#         return "4"
+#     elif count == 5:
+#         return "5"
+#     elif 6 <= count <= 10:
+#         return "6"
+#     elif 11 <= count <= 20:
+#         return "7"
+#     else:  # Plus de 20
+#         return "8"
+
+# Catégories: nb de jeu par publisher
+#     if count == 0:
+#         return "0"
+#     elif count == 1:
+#         return "1"
+#     elif count == 2:
+#         return "2"
+#     elif count == 3:
+#         return "3"
+#     elif count == 4:
+#         return "4"
+#     elif count == 5:
+#         return "5"
+#     elif 6 <= count <= 10:
+#         return "6"
+#     else:  # Plus de 10
+#         return "7"
+
+
+genre_options = ['Accounting', 'Action', 'Adventure', 'Animation & Modeling', 'Autre',
+                 'Audio Production', 'Casual', 'Design & Illustration', 'Early Access',
+                 'Education', 'Free to Play', 'Game Development', 'Gore', 'Indie',
+                 'Massively Multiplayer', 'Movie', 'Nudity', 'Photo Editing', 'RPG',
+                 'Racing', 'Sexual Content', 'Simulation', 'Software Training', 'Sports',
+                 'Strategy', 'Utilities', 'Video Production', 'Violent','Web Publishing','Missing']
+
+category_options = ['Single-player', 'Family Sharing', 'Steam Achievements', 'Steam Cloud',
+                    'Steam Trading Cards', 'Full controller support', 'Multi-player', 'PvP',
+                    'Partial Controller Support', 'Co-op', 'Online PvP', 'Steam Leaderboards',
+                    'Remote Play Together', 'Online Co-op', 'Shared/Split Screen',
+                    'Remote Play on TV', 'Steam Workshop', 'Stats', 'Shared/Split Screen PvP',
+                    'Cross-Platform Multiplayer', 'Tracked Controller Support',
+                    'Shared/Split Screen Co-op', 'Includes level editor', 'In-App Purchases',
+                    'Remote Play on Tablet', 'VR Only', 'Remote Play on Phone', 'Captions available',
+                    'MMO', 'VR Supported', 'Missing', 'LAN Co-op', 'LAN PvP']
+
+languages = [
+    "English",               # Anglais
+    "Simplified Chinese",    # Chinois simplifié
+    "Russian",               # Russe
+    "Japanese",              # Japonais
+    "Korean",                # Coréen
+    "Traditional Chinese",   # Chinois traditionnel
+    "Portuguese - Brazil",   # Portugais - Brésil
+    "Polish",                # Polonais
+    "Turkish",               # Turc
+    "Spanish - Latin America", # Espagnol - Amérique latine
+    "other_lang"             # Autre langue (remplacez "other_lang" par le nom spécifique si vous le connaissez)
+]
 
 required_fields = ['App_ID', 'Developers', 'Publishers', 'Achievements', 'Price']
 
 
 #Preprocess
-FEATURE_SELECTION_V1 = ["App_ID","Release_Date","Price","Supported_Languages","Support_URL","Windows","Mac","Linux","Achievements","Developers","Publishers","Categories","Genres","Positive","Negative"]
+FEATURE_SELECTION_V1 = ["Release_Date","Price","Supported_Languages","Support_URL","Windows","Mac","Linux","Achievements","Developers","Publishers","Categories","Genres"]
 FEATURE_SELECTION_V2 = ["App_ID","Name","Release_Date","Price","About_The_Game","Supported_Languages","Header_Image","Support_URL","Windows","Mac","Linux","Positive","Negative","Achievements","Developers","Publishers","Categories","Genres","Tags","Screenshots","Movies"]
 
 UNIQUE_LANGUAGE = ["english",'French', 'german', 'italian', 'spanish - spain',
@@ -82,7 +131,7 @@ EUROPEAN_LANGUAGES = ["German", "French", "Italian", 'Spanish - Spain', "Portugu
 
 TOP_LANGUAGES = 10
 
-percent_categories = 0.1
+
 
 days_in_year = 365.25  # moyenne en tenant compte des années bissextiles
 
