@@ -182,7 +182,7 @@ def clean_data(data_X:pd.DataFrame) :
 
     # Ajouter les catégories encodées à data_X
     #data_X = pd.concat([data_X, one_hot_encoded_df], axis=1)
-    data_X.drop(columns=["App_ID","Categories","Genres","Supported_Languages"],inplace = True)
+    data_X.drop(columns=["Categories","Genres","Supported_Languages"],inplace = True)
 
     #data_X.sort_values(by='App_ID',inplace=True)
     #Y_rating.sort_values(by='App_ID',inplace=True)
