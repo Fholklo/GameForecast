@@ -66,7 +66,7 @@ def initialize_model_v2(input_shape_num: tuple, MAX_SEQUENCE_LENGTH: int) :
     concatenated_features = Concatenate()([numerical_features, flattened_text])
 
     # Additional intermediate layers
-    hidden_layer = Dense(128, activation='relu')(concatenated_features)
+    hidden_layer = Dense(128, activation='relu')(concatenated_features)         # 3 ou 4 couches avec du dropout (50% environ çà ce stade), baisser le dropout dans les sous modèles
     output_layer = Dense(1, activation='linear')(hidden_layer)  # Example output layer for binary classification
 
     # Define the model
