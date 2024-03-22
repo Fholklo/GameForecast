@@ -77,10 +77,7 @@ def train(X_train_preprocess: pd.DataFrame,
     y_train_tf = tf.convert_to_tensor(y_train.to_numpy(),dtype='float')
 
     # Train model using `model.py`
-    model = load_model(model_name='model_rating')
-
-    if model is None:
-        model = initialize_model(X_train_tf.shape[-1])
+    model = initialize_model(X_train_tf.shape[-1])
 
     compiled_model = compile_model(model,learning_rate=learning_rate)
 

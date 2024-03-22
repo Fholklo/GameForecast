@@ -11,7 +11,7 @@ __pycache__
 /notebooks
 #Raw Data
 /raw_data
-
+/downloaded_images
 # inteliJ #
 .idea
 *.gz
