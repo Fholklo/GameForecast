@@ -73,7 +73,7 @@ def initialize_model_v2(input_shape_num: tuple, MAX_SEQUENCE_LENGTH: int) :
     model = Model(inputs=[numerical_input, text_input], outputs=output_layer)
     # ce bloc est notre modèle
     model = models.Sequential()                     # ce bloc ira en ligne 59, question sur la ligne 75, la nouvelle syntaxe remplace la définition de models.sequential ?
-    model.add(layers.Input(shape=input_shape))
+    model.add(layers.Input(shape=input_shape_num))
     model.add(layers.Dense(128, activation="relu")) #, kernel_regularizer=reg ?
     #model.add(layers.BatchNormalization(momentum=0.9))
     model.add(layers.Dense(64, activation="relu"))
