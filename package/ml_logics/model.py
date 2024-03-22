@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import tensorflow as tf
 
 from colorama import Fore, Style
 from typing import Tuple
@@ -37,12 +38,25 @@ def initialize_model(input_shape: tuple) :
     return model
 
 
-def compile_model(model, learning_rate=0.0005) :
+def compile_model(model, target:str=None, learning_rate=0.0001) :
     """
     Compile the Neural Network
     """
-    optimizer = optimizers.Adam(learning_rate=learning_rate)
-    model.compile(loss="mse", optimizer=optimizer, metrics=["mae"])
+
+    initial_learning_rate = 0.0001
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate,
+        decay_steps=1600,
+        decay_rate=0.7,
+        staircase=True)
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+    #optimizer = optimizers.Adam(learning_rate=learning_rate)
+
+    if target == "rating:":
+        model.compile(loss="mse", optimizer=optimizer, metrics=["mae"])
+    else:
+        model.compile(loss="mean_squared_logarithmic_error", optimizer=optimizer, metrics=["mean_squared_logarithmic_error","mae"])
 
     print("✅ Model compiled")
 
@@ -52,8 +66,9 @@ def train_model(
         model,
         X,
         y,
+        target:str="rating",
         batch_size=128,
-        patience=10,
+        patience=20,
         validation_split=0.2,
     ) :
     """
@@ -68,51 +83,25 @@ def train_model(
         verbose=1
     )
 
+    rp = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor='val_loss', factor=0.1, patience=5, min_lr=0.000005)
+
     history = model.fit(
         X,
         y,
         validation_split=validation_split,
-        epochs=100,
+        epochs=150,
         batch_size=batch_size,
-        callbacks=[es],
+        callbacks=[es,rp],
         verbose=1
     )
 
-    print(f"""✅ Model trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+    if target == "rating":
+        print(f"""✅ Model rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
+    if target == "player":
+        print(f"✅ Model player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+
     return model, history
-
-
-def evaluate_model(
-        model,
-        X,
-        y,
-        batch_size=32
-    ) :
-    """
-    Evaluate trained model performance on the dataset
-    """
-
-    print(Fore.BLUE + f"\nEvaluating model on {len(X)} rows..." + Style.RESET_ALL)
-
-    if model is None:
-        print(f"\n❌ No model to evaluate")
-        return None
-
-    metrics = model.evaluate(
-        x=X,
-        y=y,
-        batch_size=batch_size,
-        verbose=0,
-        # callbacks=None,
-        return_dict=True
-    )
-
-    loss = metrics["loss"]
-    mae = metrics["mae"]
-
-    print(f"✅ Model evaluated, MAE: {round(mae, 2)}, MSE loss {round(loss, 2)}")
-
-    return metrics
