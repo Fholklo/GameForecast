@@ -136,7 +136,8 @@ def clean_data(data_X:pd.DataFrame) :
     data_X.Achievements.replace('None',0,inplace=True)
     data_X.Achievements = data_X.Achievements.astype(dtype='int64')
 
-    data_X = data_X[data_X.Price != 'None']
+    #data_X = data_X[data_X.Price != 'None']
+    data_X.Price.replace("None",0,inplace=True)
     data_X.Price = data_X.Price.astype(dtype='float64')
 
     # handle categorical columns before encoding

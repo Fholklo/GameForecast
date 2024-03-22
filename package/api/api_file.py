@@ -44,7 +44,7 @@ def predict_rating(
         Achievements= [Achievements],
         Price= [Price],
     ))
-    X_pred_preprocess = preprocess(X_pred)
+    preprocessor, X_pred_preprocess = preprocess(X_pred)
     y_pred = app.state.model_rating.predict(X_pred_preprocess)
 
     return {"Rating" : float(y_pred)}
@@ -86,7 +86,7 @@ def predict_player_release(
         price= [price]
     ))
 
-    X_pred_preprocess, _ = preprocess(X_pred)
-    y_pred = app.state.model_player_r.predict(X_pred_preprocess)
+    preprocessor, X_pred_preprocess, _ = preprocess(X_pred)
+    y_pred = app.state.model_player.predict(X_pred_preprocess)
 
     return {"Peak player" : float(y_pred)}

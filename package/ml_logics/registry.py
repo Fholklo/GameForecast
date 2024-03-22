@@ -31,7 +31,7 @@ def save_results(params: dict, metrics: dict) -> None:
     print("✅ Results saved locally")
 
 
-def save_model(model_name:str, model: keras.Model = None) -> None:
+def save_model(model_name:str="model_rating", model: keras.Model = None) -> None:
     """
     Persist trained model locally on the hard drive at f"{LOCAL_REGISTRY_PATH}/models/{timestamp}.h5"
     - if MODEL_TARGET='gcs', also persist it in your bucket on GCS at "models/{timestamp}.h5" --> unit 02 only
@@ -61,7 +61,7 @@ def save_model(model_name:str, model: keras.Model = None) -> None:
     return None
 
 
-def load_model(model_name:str ) -> keras.Model:
+def load_model(model_name:str="model_rating" ) -> keras.Model:
     """
     Return a saved model:
     - locally (latest one in alphabetical order)
