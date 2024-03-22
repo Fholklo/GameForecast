@@ -21,11 +21,23 @@ LOCAL_REGISTRY_PATH =  os.path.join(os.path.expanduser('~'), ".lewagon", "gamefo
 
 #Data
 
+#################
+### MASTER
+#################
 with open('package/param_json/developer_categories_dict.json', 'r') as json_file:
     developer_categories_dict = json.load(json_file)
 
 with open('package/param_json/publisher_categories_dict.json', 'r') as json_file2:
     publishers_category_dict = json.load(json_file2)
+
+#################
+### LOCAL NOTEBOOKS
+#################
+#with open('../package/param_json/developer_categories_dict.json', 'r') as json_file:
+#    developer_categories_dict = json.load(json_file)
+
+#with open('../package/param_json/publisher_categories_dict.json', 'r') as json_file2:
+#    publishers_category_dict = json.load(json_file2)
 
 # Catégories: nb de jeu par dévelopeur
 #     if count == 0:
