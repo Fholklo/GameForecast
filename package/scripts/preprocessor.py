@@ -90,7 +90,7 @@ def clean_data(data_X:pd.DataFrame) :
     for language in missing_languages:
         data_X[language] = 0
 
-    data_X['Release_Date'] = pd.to_datetime(data_X['Release_Date'], format="mixed")
+    data_X['Release_Date'] = pd.to_datetime(data_X['Release_Date'])
 
     data_X['day_sin'] = np.sin(2 * np.pi * data_X['Release_Date'].dt.dayofyear / days_in_year)
     data_X['day_cos'] = np.cos(2 * np.pi * data_X['Release_Date'].dt.dayofyear / days_in_year)
