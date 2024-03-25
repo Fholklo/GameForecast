@@ -136,7 +136,8 @@ def train(X_train_preprocess: pd.DataFrame,
     y_train_tf = tf.convert_to_tensor(y_train.to_numpy(),dtype='float')
 
     # Train model using `model.py`
-    model = initialize_model(X_train_tf.shape[-1])
+    model = initialize_model_v2(input_shape_num=X_train_tf.shape[-1], MAX_SEQUENCE_LENGTH=MAX_SEQUENCE_LENGTH, 
+                                input_shape_img=(255,255))
 
     compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
 
