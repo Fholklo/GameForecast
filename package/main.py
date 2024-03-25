@@ -145,7 +145,8 @@ def train(numeric_input: tf.Tensor,
     train_dataset = dataset.map(prepare_for_training).batch(batch_size)
 
     # Train model using `model.py`
-    model = initialize_model(X_train_tf.shape[-1])
+    model = initialize_model_v2(input_shape_num=X_train_tf.shape[-1], MAX_SEQUENCE_LENGTH=MAX_SEQUENCE_LENGTH, 
+                                input_shape_img=(255,255))
 
     compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
 
