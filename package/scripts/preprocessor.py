@@ -1,13 +1,14 @@
 import pandas as pd
 from datetime import datetime
 import numpy as np
+import requests
 
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import RobustScaler, StandardScaler, MinMaxScaler
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.compose import ColumnTransformer, make_column_selector
-
+import tensorflow as tf
 
 from package.scripts.params import *
 
@@ -72,17 +73,46 @@ def transform_language_features(data_X: pd.DataFrame) -> pd.DataFrame:
 
     return data_X
 
+def download_image(url, app_id, index=0, folder_name='image_data', size=(256, 256)):
+    try:
+        # Obtenir l'image depuis l'URL
+        response = requests.get(url)
+        response.raise_for_status()  # Ceci va arrêter le processus en cas d'erreur
 
-def clean_data(data_X:pd.DataFrame) :
+        # Convertir le contenu binaire de l'image en un objet Image et redimensionner
+        image =  tf.image.decode_jpeg(response.content, channels=3)
+        image = tf.image.resize(image, size)  # Redimensionner l'image en 256x256 pixels
+
+        # Construire le chemin du fichier
+        file_path = f"{folder_name}/{app_id}_{index}.jpg"
+
+        # Écrire l'image redimensionnée dans un fichier en ajustant la qualité pour la compression
+        image.save(file_path, 'JPEG')  # Réduire la qualité pour compresser l'image
+        return file_path
+    except Exception as e:
+        print(f"Erreur lors du téléchargement de {url}: {e}")
+        return None
+
+
+def format_link(app_id):
+    return f'image_data/downloaded_images/{app_id}_0.jpg'
+
+
+def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
     '''clean the features before entering pipelines'''
 
-    data_X = data_X[FEATURE_SELECTION_V1].copy()
+    data_X = data_X[FEATURE_SELECTION_V2].copy()
 
 
     #Supported_Languages processing
     data_X.Supported_Languages.fillna('Missing',inplace=True)
     data_X['Supported_Languages'] = data_X['Supported_Languages'].apply(lambda x: x.split(', '))
+    european_langs = ["French", "German", "Italian", "Portuguese - Portugal", "Spanish - Spain"]
+    data_X["European languages"] = data_X['Supported_Languages'].apply(lambda langs: 1 \
+        if any(lang in langs for lang in european_langs) else 0)
     for language in languages:
+        if language == "European languages":
+            pass
         data_X[language] = data_X['Supported_Languages'].apply(lambda x: 1 if language in x else 0)
     data_X['Autre_lang'] = data_X['Supported_Languages'].apply(lambda x: 1 if len(set(x) - set(languages)) > 0 else 0)
     # Ajouter des colonnes manquantes pour les genres qui ne sont pas présents dans le jeu
@@ -109,20 +139,12 @@ def clean_data(data_X:pd.DataFrame) :
     data_X['Developers'] = data_X['Developers'].apply(get_category_by_dev)
     data_X['Developers'] = data_X['Developers'].astype(float)
 
-    #developer_counts = data_X['Developers'].groupby(data_X['Developers']).transform('count')
-    #data_X["dev_category"] = developer_counts.apply(assign_category_developer)
-    #data_X.drop(columns="Developers", inplace=True)
-
     #catégories pour publisher
     data_X['Publishers'] = data_X['Publishers'].fillna(-1)
     def get_category_by_pub(publisher_name):
         return publishers_category_dict.get(publisher_name, -1)
     data_X['Publishers'] = data_X['Publishers'].apply(get_category_by_pub)
     data_X['Publishers'] = data_X['Publishers'].astype(float)
-
-    #developer_counts = data_X['Publishers'].groupby(data_X['Publishers']).transform('count')
-    #data_X["publi_category"] = developer_counts.apply(assign_category_developer)
-    #data_X.drop(columns="Publishers", inplace=True)
 
     # transform support url with 1 if contains something, 0 otherwise
     data_X.Support_URL = data_X['Support_URL'].apply(lambda x: 0 if x!=x else 1)
@@ -151,12 +173,6 @@ def clean_data(data_X:pd.DataFrame) :
     for genre in missing_genres:
         data_X[genre] = 0
 
-    #data_X.Genres = data_X.Genres.apply(lambda x: ''.join(x).split(','))
-    #exploded_data = data_X.Genres.explode()
-    #one_hot_encoded_df = pd.get_dummies(exploded_data).groupby(level=0).sum()
-    #data_X = pd.concat([data_X,one_hot_encoded_df],axis=1)
-    #data_X.drop(columns='Genres',inplace=True)
-
     data_X.Categories.fillna('Missing',inplace=True)
     data_X['Categories'] = data_X['Categories'].apply(lambda x: x.split(','))
     for categorie in category_options:
@@ -167,34 +183,14 @@ def clean_data(data_X:pd.DataFrame) :
     for categorie in missing_categories:
         data_X[categorie] = 0
 
-    #data_X.Categories.fillna('No', inplace=True)
-    #data_X.Categories = data_X.Categories.apply(lambda x: ''.join(x).split(','))
-    #categories = data_X.Categories.explode().value_counts()/len(data_X.Categories) > percent_categories
-    #true_categories = categories[categories].index.tolist()
-    #data_X['autre_cat'] = data_X.Categories.apply(lambda x: [c for c in x if c not in true_categories])
-    # Filtrer les catégories pour encoder seulement celles présentes dans true_categories
-    #data_X['Categories'] = data_X.Categories.apply(lambda x: [c for c in x if c in true_categories])
-    # Encoder les catégories
-    #exploded_data = data_X.Categories.explode()
-    #one_hot_encoded_df = pd.get_dummies(exploded_data).groupby(level=0).sum()
-    #mise en forme de "autre"
-    #data_X["autre_cat"] = data_X["autre_cat"].apply(lambda x: 1 if x else 0)
+    if train:
+        # This just copies chemins_images, could use directly
+        # Now, create a DataFrame
+        data_X["Screenshots"] = data_X["App_ID"].apply(format_link)
+    else:
+        download_image(url=data_X["Screenshots"],app_id=data_X["App_ID"])
 
-
-    # Ajouter les catégories encodées à data_X
-    #data_X = pd.concat([data_X, one_hot_encoded_df], axis=1)
-    data_X.drop(columns=["Categories","Genres","Supported_Languages"],inplace = True)
-
-    #data_X.sort_values(by='App_ID',inplace=True)
-    #Y_rating.sort_values(by='App_ID',inplace=True)
-    #y.sort_values(by='App_ID',inplace=True)
-
-    #data_X.reset_index(drop=True,inplace=True)
-    #Y_rating.reset_index(drop=True,inplace=True)
-    #y.reset_index(drop=True,inplace=True)
-
-    #Y_rating.drop(columns="App_ID",inplace=True)
-    #y.drop(columns="App_ID",inplace=True)
+    data_X.drop(columns=["App_ID","Categories","Genres","Supported_Languages"],inplace = True)
 
     return data_X
 
