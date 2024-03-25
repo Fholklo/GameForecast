@@ -149,3 +149,5 @@ TOP_LANGUAGES = 10
 days_in_year = 365.25  # moyenne en tenant compte des années bissextiles
 
 months_in_year = 12
+
+MAX_SEQUENCE_LENGTH = 20
