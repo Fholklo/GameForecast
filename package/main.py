@@ -11,20 +11,21 @@ from package.scripts.preprocessor import *
 from package.ml_logics.model import *
 from package.ml_logics.registry import *
 
+from keras.preprocessing.text import Tokenizer
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 def get_data(target: str="rating"):
     # get the data
     if target == "rating":
-        data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/X_train.csv") #/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv
-        data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/y_train.csv")
+        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv") #/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv
+        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_train.csv")
         y = data_Y["Rating"].copy()
         print("✅ Get train dataset for rating target \n")
 
     elif target == "player":
-        data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/X_train_player.csv")
-        data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/y_train_player.csv")
+        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_train_player.csv")
+        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_train_player.csv")
         y = data_Y["Peak Players"].copy()
         y = np.log(1 + y)
         print("✅ Get train dataset for player target \n")
@@ -37,16 +38,16 @@ def get_data(target: str="rating"):
 def get_test_data(target: str="rating"):
     # get the test data
     if target == "rating":
-        data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/X_test.csv")
-        data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/y_test.csv")
+        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_test.csv")
+        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_test.csv")
         y = data_Y["Rating"].copy()
         y = tf.convert_to_tensor(y.to_numpy(),dtype='float')
 
         print("✅ Get test dataset for rating target \n")
 
     elif target == "player":
-        data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/X_test_player.csv")
-        data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/y_test_player.csv")
+        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_test_player.csv")
+        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_test_player.csv")
         y = data_Y["Peak Players"].copy()
         y = np.log(1 + y)
         y = tf.convert_to_tensor(y.to_numpy(),dtype='float')
@@ -57,7 +58,7 @@ def get_test_data(target: str="rating"):
         return None
     return data_X, y
 
-def preprocess(X: pd.DataFrame) -> pd.DataFrame :
+def preprocess(X: pd.DataFrame) -> np.ndarray :
     """
     - Query the raw dataset from Le Wagon's BigQuery dataset
     - Cache query result as a local CSV if it doesn't exist locally
@@ -69,17 +70,28 @@ def preprocess(X: pd.DataFrame) -> pd.DataFrame :
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
     # Process data
-    X_clean = clean_data(X)
+    X_clean = clean_data(X,train=True)
 
     preprocessor = full_preprocessor()
 
     X_preprocess = preprocessor.fit_transform(X_clean)
 
+    #token pour le texte
+    tokenizer = Tokenizer()
+    tokenizer.fit_on_texts(X_clean["About_The_Game"])
+    sequences = tokenizer.texts_to_sequences(X["About_The_Game"])
+    text_tokenize = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH,padding='post', truncating='post')
+
+
+    numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
+    text_input = text_tokenize
+    image_input = X_preprocess["remainder__Screenshots"].to_numpy()
+
     print("✅ preprocess() done \n")
 
-    return preprocessor, X_preprocess
+    return preprocessor, tokenizer, numeric_input,text_input,image_input
 
-def preprocess_test(preprocessor, X: pd.DataFrame) -> pd.DataFrame :
+def preprocess_test(preprocessor,tokenizer, X: pd.DataFrame) -> tf.Tensor :
     """
     - Query the raw dataset from Le Wagon's BigQuery dataset
     - Cache query result as a local CSV if it doesn't exist locally
@@ -91,32 +103,36 @@ def preprocess_test(preprocessor, X: pd.DataFrame) -> pd.DataFrame :
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
     # Process data
-    X_clean = clean_data(X)
+    X_clean = clean_data(X,train=True)
 
     X_preprocess = preprocessor.transform(X_clean)
 
-    X_preprocess = tf.convert_to_tensor(X_preprocess.to_numpy(),dtype='float')
+    sequences = tokenizer.texts_to_sequences(X["About_The_Game"])
+    text_tokenize = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH,padding='post', truncating='post')
+
+    numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
+    text_input = text_tokenize
+    image_input = X_preprocess["remainder__Screenshots"].to_numpy()
 
     print("✅ preprocess_test() done \n")
 
-    return X_preprocess
+    return numeric_input,text_input, image_input
 
-# def consistency_XY(App_ID: pd.DataFrame, data_Y: pd.DataFrame) -> pd.DataFrame:
-#     '''consistent features - target'''
-#     #data_X = data_X[data_X['App_ID'].isin(y['App_ID'])]
-#     y_rating = App_ID.copy()
-#     y = data_Y[data_Y['App_ID'].isin(y_rating['App_ID'])]
+def load_and_preprocess_image(path):
+    image = tf.io.read_file(path)
+    image = tf.image.decode_jpeg(image, channels=3)
+    return image
 
-#     y_rating.drop(columns='App_ID',inplace=True)
-#     y.drop(columns='App_ID',inplace=True)
+def prepare_for_training(numerical, text, image, y):
+    return {'numerical_input': numerical, 'text_input': text, 'img_input': image}, y
 
-#     return y_rating, y
-
-def train(X_train_preprocess: pd.DataFrame,
+def train(numeric_input: np.ndarray,
+          text_input: np.ndarray,
+          image_input: np.ndarray,
         y_train: pd.DataFrame,
         target: str="rating",
         learning_rate=0.0001,
-        batch_size = 128,
+        batch_size = 32,
         patience = 20,
         validation_split = 0.2
     ) -> float:
@@ -128,23 +144,50 @@ def train(X_train_preprocess: pd.DataFrame,
 
     Return val_mae as a float
     """
+    y_train = y_train.to_numpy()
 
-    # Split training and testing data
-    # X_train, X_test, y_train, y_test = train_test_split(X_preprocess, y, test_size=0.30)
+    # Splitting the data for training and validation
+    numeric_train_np, numeric_val_np, text_train_np, text_val_np, image_train_np, \
+        image_val_np, y_train_np, y_val_np = train_test_split(
+        numeric_input, text_input, image_input, y_train, test_size=validation_split)
 
-    X_train_tf = tf.convert_to_tensor(X_train_preprocess.to_numpy(),dtype='float')
-    y_train_tf = tf.convert_to_tensor(y_train.to_numpy(),dtype='float')
+    #Numpy to tensor
+    numeric_train = tf.convert_to_tensor(numeric_train_np, dtype='float')
+    numeric_val = tf.convert_to_tensor(numeric_val_np, dtype='float')
+    text_train = tf.convert_to_tensor(text_train_np, dtype='list')
+    text_val = tf.convert_to_tensor(text_val_np, dtype='list')
+    image_train = tf.convert_to_tensor(image_train_np, dtype='string')
+    image_val = tf.convert_to_tensor(image_val_np, dtype='string')
+    y_train_tf = tf.convert_to_tensor(y_train_np, dtype='float')
+    y_val_tf = tf.convert_to_tensor(y_val_np, dtype='float')
+
+    # Creating TensorFlow datasets
+    train_data = tf.data.Dataset.zip((
+        tf.data.Dataset.from_tensor_slices(numeric_train),
+        tf.data.Dataset.from_tensor_slices(text_train),
+        tf.data.Dataset.from_tensor_slices(image_train).map(load_and_preprocess_image),
+        tf.data.Dataset.from_tensor_slices(y_train_tf)
+    ))
+    val_data = tf.data.Dataset.zip((
+        tf.data.Dataset.from_tensor_slices(numeric_val),
+        tf.data.Dataset.from_tensor_slices(text_val),
+        tf.data.Dataset.from_tensor_slices(image_val).map(load_and_preprocess_image),
+        tf.data.Dataset.from_tensor_slices(y_val_tf)
+    ))
+    train_dataset = train_data.map(prepare_for_training()).batch(batch_size)
+    val_dataset = val_data.map(prepare_for_training).batch(batch_size)
 
     # Train model using `model.py`
-    model = initialize_model(X_train_tf.shape[-1])
+    model = initialize_model_v2(input_shape_num=numeric_train.shape[-1], MAX_SEQUENCE_LENGTH=MAX_SEQUENCE_LENGTH,
+                                input_shape_img=(256,256,3))
 
     compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
 
     trained_model, history = train_model(
-        compiled_model, X_train_tf, y_train_tf,
+        compiled_model, train_dataset,
         batch_size=batch_size,
         patience=patience,
-        validation_split=validation_split
+        validation_data=val_dataset
     )
 
     val_mse = np.min(history.history['val_loss'])
@@ -153,17 +196,12 @@ def train(X_train_preprocess: pd.DataFrame,
     if target == "player":
         val_mae = np.min(history.history['val_loss'])
 
-    #params = dict(context="train",training_set_size=DATA_SIZE,row_count=len(X_train_processed))
-
-    # Save results on the hard drive using taxifare.ml_logic.registry
-    # save_results(params=params, metrics=dict(mae=val_mae))
-
     # Save model weight on the hard drive (and optionally on GCS too!)
     save_model(model_name=f"model_{target}",model=trained_model)
 
     print("✅ train() done \n")
 
-    return trained_model, X_train_tf, y_train_tf, val_mae, val_mse, history
+    return trained_model, val_mae, val_mse
 
 def evaluate_model(
         model,
@@ -232,42 +270,46 @@ if __name__ == '__main__':
     # training rating model
     data_X, data_Y = get_data(target="rating")
 
-    preprocessor, X_preprocess = preprocess(data_X)
+    preprocessor, tokeniser, numeric_input,text_input,image_input = preprocess(data_X[:200])
 
-    trained_model, X_train_tf, y_train_tf, _, _, history = train(X_preprocess,
-          data_Y,
+    trained_model, _, _ = train(numeric_input=numeric_input,
+          text_input=text_input,
+          image_input=image_input,
+          y_train=data_Y[:200],
           target="rating",
           learning_rate=0.0001,
-          batch_size = 128,
+          batch_size = 32,
           patience = 10,
           validation_split = 0.2)
 
     # testing rating model
-    data_X_test, y_test = get_test_data(target="rating")
+    #data_X_test, y_test = get_test_data(target="rating")
 
-    X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
+    #X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
 
-    evaluate_model(trained_model,X_test,y_test,batch_size=32)
+    #evaluate_model(trained_model,X_test,y_test,batch_size=32)
 
 
     # training player model
-    data_X, data_Y = get_data(target="player")
+    # data_X, data_Y = get_data(target="player")
 
-    preprocessor, X_preprocess = preprocess(data_X)
+    # preprocessor, numeric_input,text_input,image_input = preprocess(data_X)
 
-    trained_model, X_train_tf, y_train_tf, _, _, history = train(X_preprocess,
-          data_Y,
-          target="player",
-          learning_rate=0.0001,
-          batch_size = 128,
-          patience = 20,
-          validation_split = 0.2)
+    # trained_model, _, _ = train(numeric_input=numeric_input,
+    #       text_input=text_input,
+    #       image_input=image_input,
+    #       y_train=data_Y,
+    #       target="player",
+    #       learning_rate=0.0001,
+    #       batch_size = 32,
+    #       patience = 20,
+    #       validation_split = 0.2)
 
     # testing rating model
-    data_X_test, y_test = get_test_data(target="player")
+    #data_X_test, y_test = get_test_data(target="player")
 
-    X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
+    #X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
 
-    evaluate_model(trained_model,X_test,y_test,target="player",batch_size=32)
+    #evaluate_model(trained_model,X_test,y_test,target="player",batch_size=32)
 
     #pred()
