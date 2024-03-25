@@ -48,8 +48,10 @@ def initialize_model_v2(input_shape_num: int, MAX_SEQUENCE_LENGTH: int, input_sh
     numerical_input = Input(shape=input_shape_num, name='numerical_input')
     text_input = Input(shape=MAX_SEQUENCE_LENGTH, name='text_input')
     img_input = Input(shape=input_shape_img, name='img_input')
-    rescale = Rescaling(scale=1/255)(img_input)
-    reshape = Reshape((255,255,3))(rescale)
+
+    reshape = Reshape((256,256,3))(img_input)
+    rescale = Rescaling(scale=1/255)(reshape)
+
 
     # Text embedding layer
     embedding_dim = 100  # Example dimension for embeddings
@@ -63,25 +65,26 @@ def initialize_model_v2(input_shape_num: int, MAX_SEQUENCE_LENGTH: int, input_sh
     numerical_features = Dense(64, activation='relu')(numerical_features)
     numerical_features = Dense(32, activation='relu')(numerical_features)
     numerical_features = Dense(16, activation='relu')(numerical_features)
-    numerical_features = Dropout(rate=0.2)
+    numerical_features = Dropout(rate=0.2)(numerical_features)
     # Images
-    img_features = VGG16(weights="imagenet", include_top=False)(reshape)
+    img_features = VGG16(weights="imagenet", include_top=False)(rescale)
     img_features.trainable = False
     img_features = layers.Flatten()(img_features)
     img_features = layers.BatchNormalization(momentum=0.8)(img_features)
     img_features = layers.Dense(500, activation='relu')(img_features)
     img_features = layers.Dropout(0.5)(img_features)
     # Concatenate numerical, text and image features
+
     concatenated_features = Concatenate()([numerical_features, flattened_text, img_features])
     # Additional intermediate layers
     hidden_layer = Dense(256, activation='relu')(concatenated_features)
-    hidden_layer = Dropout(rate=0.3)
+    hidden_layer = Dropout(rate=0.3)(hidden_layer)
     hidden_layer = Dense(128, activation='relu')(concatenated_features)
-    hidden_layer = Dropout(rate=0.3)
+    hidden_layer = Dropout(rate=0.3)(hidden_layer)
     hidden_layer = Dense(64, activation='relu')(concatenated_features)
-    hidden_layer = Dropout(rate=0.3)
+    hidden_layer = Dropout(rate=0.3)(hidden_layer)
     hidden_layer = Dense(32, activation='relu')(concatenated_features)
-    hidden_layer = Dropout(rate=0.3)
+    hidden_layer = Dropout(rate=0.3)(hidden_layer)
     output_layer = Dense(1, activation='linear')(hidden_layer)
     # Define the model
     model = Model(inputs=[numerical_input, text_input, img_input], outputs=output_layer)
@@ -105,7 +108,7 @@ def compile_model(model, target:str=None, learning_rate=0.0001) :
     optimizer = optimizers.Adam(learning_rate=lr_schedule)
     #optimizer = optimizers.Adam(learning_rate=learning_rate)
 
-    if target == "rating:":
+    if target == "rating":
         model.compile(loss="mse", optimizer=optimizer, metrics=["mae"])
     else:
         model.compile(loss="mean_squared_logarithmic_error", optimizer=optimizer, metrics=["mean_squared_logarithmic_error","mae"])

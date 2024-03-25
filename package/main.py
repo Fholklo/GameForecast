@@ -11,20 +11,21 @@ from package.scripts.preprocessor import *
 from package.ml_logics.model import *
 from package.ml_logics.registry import *
 
+from keras.preprocessing.text import Tokenizer
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 def get_data(target: str="rating"):
     # get the data
     if target == "rating":
-        data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/X_train.csv") #/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv
-        data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/y_train.csv")
+        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv") #/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv
+        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_train.csv")
         y = data_Y["Rating"].copy()
         print("✅ Get train dataset for rating target \n")
 
     elif target == "player":
-        data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/X_train_player.csv")
-        data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/y_train_player.csv")
+        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_train_player.csv")
+        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_train_player.csv")
         y = data_Y["Peak Players"].copy()
         y = np.log(1 + y)
         print("✅ Get train dataset for player target \n")
@@ -37,16 +38,16 @@ def get_data(target: str="rating"):
 def get_test_data(target: str="rating"):
     # get the test data
     if target == "rating":
-        data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/X_test.csv")
-        data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/y_test.csv")
+        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_test.csv")
+        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_test.csv")
         y = data_Y["Rating"].copy()
         y = tf.convert_to_tensor(y.to_numpy(),dtype='float')
 
         print("✅ Get test dataset for rating target \n")
 
     elif target == "player":
-        data_X = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/X_test_player.csv")
-        data_Y = pd.read_csv("/home/nicolas/code/NicolasAdrs/projet/GameForecast/raw_data/y_test_player.csv")
+        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_test_player.csv")
+        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_test_player.csv")
         y = data_Y["Peak Players"].copy()
         y = np.log(1 + y)
         y = tf.convert_to_tensor(y.to_numpy(),dtype='float')
@@ -57,7 +58,7 @@ def get_test_data(target: str="rating"):
         return None
     return data_X, y
 
-def preprocess(X: pd.DataFrame) -> tf.Tensor :
+def preprocess(X: pd.DataFrame) -> np.ndarray :
     """
     - Query the raw dataset from Le Wagon's BigQuery dataset
     - Cache query result as a local CSV if it doesn't exist locally
@@ -69,21 +70,28 @@ def preprocess(X: pd.DataFrame) -> tf.Tensor :
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
     # Process data
-    X_clean = clean_data(X)
+    X_clean = clean_data(X,train=True)
 
     preprocessor = full_preprocessor()
 
     X_preprocess = preprocessor.fit_transform(X_clean)
-    numeric_input = X_preprocess.drop(column= ["About_The_Game","Screenshots"],inplace=True)
-    numeric_input = tf.convert_to_tensor(numeric_input.to_numpy(),dtype='float')
-    text_input = tf.convert_to_tensor(X_preprocess["About_The_Game"],dtype='float')
-    image_input = tf.convert_to_tensor(X_preprocess["Screenshots"],dtype='float')
+
+    #token pour le texte
+    tokenizer = Tokenizer()
+    tokenizer.fit_on_texts(X_clean["About_The_Game"])
+    sequences = tokenizer.texts_to_sequences(X["About_The_Game"])
+    text_tokenize = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH,padding='post', truncating='post')
+
+
+    numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
+    text_input = text_tokenize
+    image_input = X_preprocess["remainder__Screenshots"].to_numpy()
 
     print("✅ preprocess() done \n")
 
-    return preprocessor, numeric_input,text_input,image_input
+    return preprocessor, tokenizer, numeric_input,text_input,image_input
 
-def preprocess_test(preprocessor, X: pd.DataFrame) -> tf.Tensor :
+def preprocess_test(preprocessor,tokenizer, X: pd.DataFrame) -> tf.Tensor :
     """
     - Query the raw dataset from Le Wagon's BigQuery dataset
     - Cache query result as a local CSV if it doesn't exist locally
@@ -95,13 +103,16 @@ def preprocess_test(preprocessor, X: pd.DataFrame) -> tf.Tensor :
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
     # Process data
-    X_clean = clean_data(X)
+    X_clean = clean_data(X,train=True)
 
     X_preprocess = preprocessor.transform(X_clean)
-    numeric_input = X_preprocess.drop(column= ["About_The_Game","Screenshots"],inplace=True)
-    numeric_input = tf.convert_to_tensor(numeric_input.to_numpy(),dtype='float')
-    text_input = tf.convert_to_tensor(X_preprocess["About_The_Game"],dtype='float')
-    image_input = tf.convert_to_tensor(X_preprocess["Screenshots"],dtype='float')
+
+    sequences = tokenizer.texts_to_sequences(X["About_The_Game"])
+    text_tokenize = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH,padding='post', truncating='post')
+
+    numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
+    text_input = text_tokenize
+    image_input = X_preprocess["remainder__Screenshots"].to_numpy()
 
     print("✅ preprocess_test() done \n")
 
@@ -115,9 +126,9 @@ def load_and_preprocess_image(path):
 def prepare_for_training(numerical, text, image, y):
     return {'numerical_input': numerical, 'text_input': text, 'img_input': image}, y
 
-def train(numeric_input: tf.Tensor,
-          text_input: tf.Tensor,
-          image_input: tf.Tensor,
+def train(numeric_input: np.ndarray,
+          text_input: np.ndarray,
+          image_input: np.ndarray,
         y_train: pd.DataFrame,
         target: str="rating",
         learning_rate=0.0001,
@@ -133,11 +144,23 @@ def train(numeric_input: tf.Tensor,
 
     Return val_mae as a float
     """
-    y_train_tf = tf.convert_to_tensor(y_train.to_numpy(),dtype='float')
+    y_train = y_train.to_numpy()
 
     # Splitting the data for training and validation
-    numeric_train, numeric_val, text_train, text_val, image_train, image_val, y_train_tf, y_val_tf = train_test_split(
-        numeric_input, text_input, image_input, y_train_tf, test_size=validation_split)
+    numeric_train_np, numeric_val_np, text_train_np, text_val_np, image_train_np, \
+        image_val_np, y_train_np, y_val_np = train_test_split(
+        numeric_input, text_input, image_input, y_train, test_size=validation_split)
+
+    #Numpy to tensor
+    numeric_train = tf.convert_to_tensor(numeric_train_np, dtype='float')
+    numeric_val = tf.convert_to_tensor(numeric_val_np, dtype='float')
+    text_train = tf.convert_to_tensor(text_train_np, dtype='list')
+    text_val = tf.convert_to_tensor(text_val_np, dtype='list')
+    image_train = tf.convert_to_tensor(image_train_np, dtype='string')
+    image_val = tf.convert_to_tensor(image_val_np, dtype='string')
+    y_train_tf = tf.convert_to_tensor(y_train_np, dtype='float')
+    y_val_tf = tf.convert_to_tensor(y_val_np, dtype='float')
+
     # Creating TensorFlow datasets
     train_data = tf.data.Dataset.zip((
         tf.data.Dataset.from_tensor_slices(numeric_train),
@@ -151,12 +174,12 @@ def train(numeric_input: tf.Tensor,
         tf.data.Dataset.from_tensor_slices(image_val).map(load_and_preprocess_image),
         tf.data.Dataset.from_tensor_slices(y_val_tf)
     ))
-    train_dataset = train_data.map(prepare_for_training).batch(batch_size)
+    train_dataset = train_data.map(prepare_for_training()).batch(batch_size)
     val_dataset = val_data.map(prepare_for_training).batch(batch_size)
 
     # Train model using `model.py`
     model = initialize_model_v2(input_shape_num=numeric_train.shape[-1], MAX_SEQUENCE_LENGTH=MAX_SEQUENCE_LENGTH,
-                                input_shape_img=(256,256))
+                                input_shape_img=(256,256,3))
 
     compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
 
@@ -247,12 +270,12 @@ if __name__ == '__main__':
     # training rating model
     data_X, data_Y = get_data(target="rating")
 
-    preprocessor, numeric_input,text_input,image_input = preprocess(data_X)
+    preprocessor, tokeniser, numeric_input,text_input,image_input = preprocess(data_X[:200])
 
     trained_model, _, _ = train(numeric_input=numeric_input,
           text_input=text_input,
           image_input=image_input,
-          y_train=data_Y,
+          y_train=data_Y[:200],
           target="rating",
           learning_rate=0.0001,
           batch_size = 32,
@@ -268,19 +291,19 @@ if __name__ == '__main__':
 
 
     # training player model
-    data_X, data_Y = get_data(target="player")
+    # data_X, data_Y = get_data(target="player")
 
-    preprocessor, numeric_input,text_input,image_input = preprocess(data_X)
+    # preprocessor, numeric_input,text_input,image_input = preprocess(data_X)
 
-    trained_model, _, _ = train(numeric_input=numeric_input,
-          text_input=text_input,
-          image_input=image_input,
-          y_train=data_Y,
-          target="player",
-          learning_rate=0.0001,
-          batch_size = 32,
-          patience = 20,
-          validation_split = 0.2)
+    # trained_model, _, _ = train(numeric_input=numeric_input,
+    #       text_input=text_input,
+    #       image_input=image_input,
+    #       y_train=data_Y,
+    #       target="player",
+    #       learning_rate=0.0001,
+    #       batch_size = 32,
+    #       patience = 20,
+    #       validation_split = 0.2)
 
     # testing rating model
     #data_X_test, y_test = get_test_data(target="player")
