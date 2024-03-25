@@ -8,6 +8,7 @@ __MACOSX
 __pycache__
 *checkpoint.ipynb
 *.ipynb_checkpoints
+*.ipynb
 /notebooks
 #Raw Data
 /raw_data
