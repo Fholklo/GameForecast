@@ -112,8 +112,8 @@ def load_and_preprocess_image(path):
     image = tf.image.decode_jpeg(image, channels=3)
     return image
 
-def prepare_for_training(numerical, text, image, target):
-    return {'numerical_input': numerical, 'text_input': text, 'img_input': image}, target
+def prepare_for_training(numerical, text, image, y):
+    return {'numerical_input': numerical, 'text_input': text, 'img_input': image}, y
 
 def train(numeric_input: tf.Tensor,
           text_input: tf.Tensor,
@@ -135,26 +135,36 @@ def train(numeric_input: tf.Tensor,
     """
     y_train_tf = tf.convert_to_tensor(y_train.to_numpy(),dtype='float')
 
-    dataset_images = tf.data.Dataset.from_tensor_slices(image_input).map(load_and_preprocess_image).batch(batch_size)
-    dataset_texts = tf.data.Dataset.from_tensor_slices(text_input).batch(batch_size)
-    dataset_numerical = tf.data.Dataset.from_tensor_slices(numeric_input).batch(batch_size)
-    dataset_targets = tf.data.Dataset.from_tensor_slices(y_train_tf).batch(batch_size)
-
-    # Assurez-vous que le dataset est bien synchronisé
-    dataset = tf.data.Dataset.zip((dataset_numerical, dataset_texts, dataset_images, dataset_targets))
-    train_dataset = dataset.map(prepare_for_training).batch(batch_size)
+    # Splitting the data for training and validation
+    numeric_train, numeric_val, text_train, text_val, image_train, image_val, y_train_tf, y_val_tf = train_test_split(
+        numeric_input, text_input, image_input, y_train_tf, test_size=validation_split)
+    # Creating TensorFlow datasets
+    train_data = tf.data.Dataset.zip((
+        tf.data.Dataset.from_tensor_slices(numeric_train),
+        tf.data.Dataset.from_tensor_slices(text_train),
+        tf.data.Dataset.from_tensor_slices(image_train).map(load_and_preprocess_image),
+        tf.data.Dataset.from_tensor_slices(y_train_tf)
+    ))
+    val_data = tf.data.Dataset.zip((
+        tf.data.Dataset.from_tensor_slices(numeric_val),
+        tf.data.Dataset.from_tensor_slices(text_val),
+        tf.data.Dataset.from_tensor_slices(image_val).map(load_and_preprocess_image),
+        tf.data.Dataset.from_tensor_slices(y_val_tf)
+    ))
+    train_dataset = train_data.map(prepare_for_training).batch(batch_size)
+    val_dataset = val_data.map(prepare_for_training).batch(batch_size)
 
     # Train model using `model.py`
-    model = initialize_model_v2(input_shape_num=X_train_tf.shape[-1], MAX_SEQUENCE_LENGTH=MAX_SEQUENCE_LENGTH, 
-                                input_shape_img=(255,255))
+    model = initialize_model_v2(input_shape_num=numeric_train.shape[-1], MAX_SEQUENCE_LENGTH=MAX_SEQUENCE_LENGTH,
+                                input_shape_img=(256,256))
 
     compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
 
     trained_model, history = train_model(
-        compiled_model, X_train_tf, y_train_tf,
+        compiled_model, train_dataset,
         batch_size=batch_size,
         patience=patience,
-        validation_split=validation_split
+        validation_data=val_dataset
     )
 
     val_mse = np.min(history.history['val_loss'])
@@ -168,7 +178,7 @@ def train(numeric_input: tf.Tensor,
 
     print("✅ train() done \n")
 
-    return trained_model, X_train_tf, y_train_tf, val_mae, val_mse, history
+    return trained_model, val_mae, val_mse
 
 def evaluate_model(
         model,
@@ -237,42 +247,46 @@ if __name__ == '__main__':
     # training rating model
     data_X, data_Y = get_data(target="rating")
 
-    preprocessor, X_preprocess = preprocess(data_X)
+    preprocessor, numeric_input,text_input,image_input = preprocess(data_X)
 
-    trained_model, X_train_tf, y_train_tf, _, _, history = train(X_preprocess,
-          data_Y,
+    trained_model, _, _ = train(numeric_input=numeric_input,
+          text_input=text_input,
+          image_input=image_input,
+          y_train=data_Y,
           target="rating",
           learning_rate=0.0001,
-          batch_size = 128,
+          batch_size = 32,
           patience = 10,
           validation_split = 0.2)
 
     # testing rating model
-    data_X_test, y_test = get_test_data(target="rating")
+    #data_X_test, y_test = get_test_data(target="rating")
 
-    X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
+    #X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
 
-    evaluate_model(trained_model,X_test,y_test,batch_size=32)
+    #evaluate_model(trained_model,X_test,y_test,batch_size=32)
 
 
     # training player model
     data_X, data_Y = get_data(target="player")
 
-    preprocessor, X_preprocess = preprocess(data_X)
+    preprocessor, numeric_input,text_input,image_input = preprocess(data_X)
 
-    trained_model, X_train_tf, y_train_tf, _, _, history = train(X_preprocess,
-          data_Y,
+    trained_model, _, _ = train(numeric_input=numeric_input,
+          text_input=text_input,
+          image_input=image_input,
+          y_train=data_Y,
           target="player",
           learning_rate=0.0001,
-          batch_size = 128,
+          batch_size = 32,
           patience = 20,
           validation_split = 0.2)
 
     # testing rating model
-    data_X_test, y_test = get_test_data(target="player")
+    #data_X_test, y_test = get_test_data(target="player")
 
-    X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
+    #X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
 
-    evaluate_model(trained_model,X_test,y_test,target="player",batch_size=32)
+    #evaluate_model(trained_model,X_test,y_test,target="player",batch_size=32)
 
     #pred()
