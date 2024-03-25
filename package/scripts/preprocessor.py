@@ -95,7 +95,7 @@ def download_image(url, app_id, index=0, folder_name='image_data', size=(256, 25
 
 
 def format_link(app_id):
-    return f'image_data/downloaded_images/{app_id}_0.jpg'
+    return f'image_data/{app_id}_0.jpg'
 
 
 def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
@@ -189,8 +189,11 @@ def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
         data_X["Screenshots"] = data_X["App_ID"].apply(format_link)
     else:
         download_image(url=data_X["Screenshots"],app_id=data_X["App_ID"])
+        data_X["Screenshots"] = data_X["App_ID"].apply(format_link)
 
     data_X.drop(columns=["App_ID","Categories","Genres","Supported_Languages"],inplace = True)
+
+    data_X["About_The_Game"].fillna(value="Missing",inplace=True)
 
     return data_X
 
