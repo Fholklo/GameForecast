@@ -67,8 +67,10 @@ def initialize_model_v2(input_shape_num: int, MAX_SEQUENCE_LENGTH: int, input_sh
     numerical_features = Dense(16, activation='relu')(numerical_features)
     numerical_features = Dropout(rate=0.2)(numerical_features)
     # Images
-    img_features = VGG16(weights="imagenet", include_top=False)(rescale)
-    img_features.trainable = False
+    base_model = VGG16(weights="imagenet", include_top=False, input_shape=input_shape_img)
+    base_model.trainable = False
+
+    img_features = base_model(rescale)
     img_features = layers.Flatten()(img_features)
     img_features = layers.BatchNormalization(momentum=0.8)(img_features)
     img_features = layers.Dense(500, activation='relu')(img_features)
@@ -79,11 +81,11 @@ def initialize_model_v2(input_shape_num: int, MAX_SEQUENCE_LENGTH: int, input_sh
     # Additional intermediate layers
     hidden_layer = Dense(256, activation='relu')(concatenated_features)
     hidden_layer = Dropout(rate=0.3)(hidden_layer)
-    hidden_layer = Dense(128, activation='relu')(concatenated_features)
+    hidden_layer = Dense(128, activation='relu')(hidden_layer)
     hidden_layer = Dropout(rate=0.3)(hidden_layer)
-    hidden_layer = Dense(64, activation='relu')(concatenated_features)
+    hidden_layer = Dense(64, activation='relu')(hidden_layer)
     hidden_layer = Dropout(rate=0.3)(hidden_layer)
-    hidden_layer = Dense(32, activation='relu')(concatenated_features)
+    hidden_layer = Dense(32, activation='relu')(hidden_layer)
     hidden_layer = Dropout(rate=0.3)(hidden_layer)
     output_layer = Dense(1, activation='linear')(hidden_layer)
     # Define the model
