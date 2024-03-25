@@ -57,7 +57,7 @@ def get_test_data(target: str="rating"):
         return None
     return data_X, y
 
-def preprocess(X: pd.DataFrame) -> pd.DataFrame :
+def preprocess(X: pd.DataFrame) -> tf.Tensor :
     """
     - Query the raw dataset from Le Wagon's BigQuery dataset
     - Cache query result as a local CSV if it doesn't exist locally
@@ -74,12 +74,16 @@ def preprocess(X: pd.DataFrame) -> pd.DataFrame :
     preprocessor = full_preprocessor()
 
     X_preprocess = preprocessor.fit_transform(X_clean)
+    numeric_input = X_preprocess.drop(column= ["About_The_Game","Screenshots"],inplace=True)
+    numeric_input = tf.convert_to_tensor(numeric_input.to_numpy(),dtype='float')
+    text_input = tf.convert_to_tensor(X_preprocess["About_The_Game"],dtype='float')
+    image_input = tf.convert_to_tensor(X_preprocess["Screenshots"],dtype='float')
 
     print("✅ preprocess() done \n")
 
-    return preprocessor, X_preprocess
+    return preprocessor, numeric_input,text_input,image_input
 
-def preprocess_test(preprocessor, X: pd.DataFrame) -> pd.DataFrame :
+def preprocess_test(preprocessor, X: pd.DataFrame) -> tf.Tensor :
     """
     - Query the raw dataset from Le Wagon's BigQuery dataset
     - Cache query result as a local CSV if it doesn't exist locally
@@ -94,29 +98,30 @@ def preprocess_test(preprocessor, X: pd.DataFrame) -> pd.DataFrame :
     X_clean = clean_data(X)
 
     X_preprocess = preprocessor.transform(X_clean)
-
-    X_preprocess = tf.convert_to_tensor(X_preprocess.to_numpy(),dtype='float')
+    numeric_input = X_preprocess.drop(column= ["About_The_Game","Screenshots"],inplace=True)
+    numeric_input = tf.convert_to_tensor(numeric_input.to_numpy(),dtype='float')
+    text_input = tf.convert_to_tensor(X_preprocess["About_The_Game"],dtype='float')
+    image_input = tf.convert_to_tensor(X_preprocess["Screenshots"],dtype='float')
 
     print("✅ preprocess_test() done \n")
 
-    return X_preprocess
+    return numeric_input,text_input, image_input
 
-# def consistency_XY(App_ID: pd.DataFrame, data_Y: pd.DataFrame) -> pd.DataFrame:
-#     '''consistent features - target'''
-#     #data_X = data_X[data_X['App_ID'].isin(y['App_ID'])]
-#     y_rating = App_ID.copy()
-#     y = data_Y[data_Y['App_ID'].isin(y_rating['App_ID'])]
+def load_and_preprocess_image(path):
+    image = tf.io.read_file(path)
+    image = tf.image.decode_jpeg(image, channels=3)
+    return image
 
-#     y_rating.drop(columns='App_ID',inplace=True)
-#     y.drop(columns='App_ID',inplace=True)
+def prepare_for_training(numerical, text, image, target):
+    return {'numerical_input': numerical, 'text_input': text, 'img_input': image}, target
 
-#     return y_rating, y
-
-def train(X_train_preprocess: pd.DataFrame,
+def train(numeric_input: tf.Tensor,
+          text_input: tf.Tensor,
+          image_input: tf.Tensor,
         y_train: pd.DataFrame,
         target: str="rating",
         learning_rate=0.0001,
-        batch_size = 128,
+        batch_size = 32,
         patience = 20,
         validation_split = 0.2
     ) -> float:
@@ -128,12 +133,16 @@ def train(X_train_preprocess: pd.DataFrame,
 
     Return val_mae as a float
     """
-
-    # Split training and testing data
-    # X_train, X_test, y_train, y_test = train_test_split(X_preprocess, y, test_size=0.30)
-
-    X_train_tf = tf.convert_to_tensor(X_train_preprocess.to_numpy(),dtype='float')
     y_train_tf = tf.convert_to_tensor(y_train.to_numpy(),dtype='float')
+
+    dataset_images = tf.data.Dataset.from_tensor_slices(image_input).map(load_and_preprocess_image).batch(batch_size)
+    dataset_texts = tf.data.Dataset.from_tensor_slices(text_input).batch(batch_size)
+    dataset_numerical = tf.data.Dataset.from_tensor_slices(numeric_input).batch(batch_size)
+    dataset_targets = tf.data.Dataset.from_tensor_slices(y_train_tf).batch(batch_size)
+
+    # Assurez-vous que le dataset est bien synchronisé
+    dataset = tf.data.Dataset.zip((dataset_numerical, dataset_texts, dataset_images, dataset_targets))
+    train_dataset = dataset.map(prepare_for_training).batch(batch_size)
 
     # Train model using `model.py`
     model = initialize_model(X_train_tf.shape[-1])
@@ -152,11 +161,6 @@ def train(X_train_preprocess: pd.DataFrame,
         val_mae = np.min(history.history['val_mae'])
     if target == "player":
         val_mae = np.min(history.history['val_loss'])
-
-    #params = dict(context="train",training_set_size=DATA_SIZE,row_count=len(X_train_processed))
-
-    # Save results on the hard drive using taxifare.ml_logic.registry
-    # save_results(params=params, metrics=dict(mae=val_mae))
 
     # Save model weight on the hard drive (and optionally on GCS too!)
     save_model(model_name=f"model_{target}",model=trained_model)
