@@ -116,12 +116,11 @@ def compile_model(model, target:str=None, learning_rate=0.0001) :
 
 def train_model(
         model,
-        X,
-        y,
+        train_dataset,
         target:str="rating",
         batch_size=32,
         patience=10,
-        validation_split=0.2,
+        validation_data=None
     ) :
     """
     Fit the model and return a tuple (fitted_model, history)
@@ -139,9 +138,8 @@ def train_model(
             monitor='val_loss', factor=0.1, patience=5, min_lr=0.000005)
 
     history = model.fit(
-        X,
-        y,
-        validation_split=validation_split,
+        train_dataset,
+        validation_data=validation_data,
         epochs=150,
         batch_size=batch_size,
         callbacks=[es,rp],
