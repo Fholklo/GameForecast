@@ -4,6 +4,7 @@ from tensorflow import keras
 
 from package.main import preprocess_test, load_most_recent_model
 from package.front_end.params_acc import folder_path_player,folder_path_rating
+
 app = FastAPI()
 
 app.state.model_rating_num =keras.models.load_model("")

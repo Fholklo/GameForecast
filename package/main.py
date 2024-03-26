@@ -19,7 +19,7 @@ from package.scripts.max_len import MAX_LEN
 from package.ml_logics.model import initialize_model_numeric,initialize_cnn_model,initialize_model_text,initialize_metamodel
 from package.ml_logics.model import compile_model, train_model_numeric, train_model_image,train_model_text,train_metamodel
 
-from package.ml_logics.registry import save_model, load_most_recent_model
+from package.ml_logics.registry import save_model, load_most_recent_model, save_results
 
 def get_data(target: str="rating"):
     # get the data
@@ -188,6 +188,7 @@ def train_numeric(
 
     # Save model weight on the hard drive (and optionally on GCS too!)
     save_model(model_name=f"model_{target}",model_type="model_num", model=trained_model)
+    save_results(history=history, model_name=f"model_{target}", model_type="model_num")
 
     print("✅ train() done \n")
 
@@ -233,6 +234,7 @@ def train_text(
 
     # Save model weight on the hard drive (and optionally on GCS too!)
     save_model(model_name=f"model_{target}",model_type="model_text", model=trained_model)
+    save_results(history=history, model_name=f"model_{target}", model_type="model_text")
 
     print("✅ train() done \n")
 
@@ -271,6 +273,7 @@ def train_image(
 
     # Save model weight on the hard drive (and optionally on GCS too!)
     save_model(model_name=f"model_{target}",model_type="model_image", model=trained_model)
+    save_results(history=history, model_name=f"model_{target}", model_type="model_image")
 
     print("✅ train() done \n")
 
@@ -319,6 +322,7 @@ def train_meta_model(
 
     # Save model weight on the hard drive (and optionally on GCS too!)
     save_model(model_name=f"model_{target}",model_type="model_meta", model=trained_model)
+    save_results(history=history, model_name=f"model_{target}", model_type="model_meta")
 
     print("✅ train() done \n")
 
