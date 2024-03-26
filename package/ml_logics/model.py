@@ -3,24 +3,15 @@ import time
 import tensorflow as tf
 
 from colorama import Fore, Style
-from typing import Tuple
-from tensorflow import keras
 from keras import models,layers, regularizers, optimizers
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.models import Model
-from keras.layers import Input, Embedding, Dense, Concatenate, Flatten, LSTM, Rescaling, Reshape, Dropout
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from keras.models import Sequential
+from keras.layers import Embedding, Dense, Flatten, LSTM, Rescaling, Reshape, Dropout, Input, Concatenate
 from keras.applications import VGG16
 from keras.preprocessing.sequence import pad_sequences
 
-# Timing the TF import
-print(Fore.BLUE + "\nLoading TensorFlow..." + Style.RESET_ALL)
-start = time.perf_counter()
-
-end = time.perf_counter()
-print(f"\n✅ TensorFlow loaded ({round(end - start, 2)}s)")
-
-
-def initialize_model(input_shape: tuple) :
+def initialize_model_numeric(input_shape: int) :
     """
     Initialize the Neural Network with random weights
     """
@@ -37,62 +28,81 @@ def initialize_model(input_shape: tuple) :
     model.add(layers.Dropout(rate=0.3))
     model.add(layers.Dense(1, activation="linear"))
 
+    print("✅ Model initialized_numeric")
+
+    return model
+
+def initialize_model_text(input_dim: int,max_len:int) :
+    """
+    Initialize the Neural Network with random weights
+    """
+    model = Sequential([
+        Embedding(input_dim=input_dim, output_dim=64, input_length=max_len),
+        LSTM(64),
+        Dense(1, activation='linear')
+    ])
     print("✅ Model initialized")
 
     return model
 
-def initialize_model_v2(input_shape_num: int, MAX_SEQUENCE_LENGTH: int, input_shape_img: tuple) :
-    """
-    Initialize the Neural Network for 3 data types
-    """
-    numerical_input = Input(shape=input_shape_num, name='numerical_input')
-    text_input = Input(shape=MAX_SEQUENCE_LENGTH, name='text_input')
-    img_input = Input(shape=input_shape_img, name='img_input')
-
-    reshape = Reshape((256,256,3))(img_input)
-    rescale = Rescaling(scale=1/255)(reshape)
-
-
-    # Text embedding layer
-    embedding_dim = 100  # Example dimension for embeddings
-    vocab_size = 10000   # Example vocabulary size
-    embedding_layer = Embedding(input_dim=vocab_size, output_dim=embedding_dim)(text_input)
-    lstm_layer = LSTM(10, return_sequences=True)(embedding_layer)
-    lstm_layer_2 = LSTM(10)(lstm_layer)
-    flattened_text = Flatten()(lstm_layer_2)
-    # Feature extraction layer for numerical data
-    numerical_features = Dense(128, activation='relu')(numerical_input)
-    numerical_features = Dense(64, activation='relu')(numerical_features)
-    numerical_features = Dense(32, activation='relu')(numerical_features)
-    numerical_features = Dense(16, activation='relu')(numerical_features)
-    numerical_features = Dropout(rate=0.2)(numerical_features)
-    # Images
-    base_model = VGG16(weights="imagenet", include_top=False, input_shape=input_shape_img)
-    base_model.trainable = False
-
-    img_features = base_model(rescale)
-    img_features = layers.Flatten()(img_features)
-    img_features = layers.BatchNormalization(momentum=0.8)(img_features)
-    img_features = layers.Dense(500, activation='relu')(img_features)
-    img_features = layers.Dropout(0.5)(img_features)
-    # Concatenate numerical, text and image features
-
-    concatenated_features = Concatenate()([numerical_features, flattened_text, img_features])
-    # Additional intermediate layers
-    hidden_layer = Dense(256, activation='relu')(concatenated_features)
-    hidden_layer = Dropout(rate=0.3)(hidden_layer)
-    hidden_layer = Dense(128, activation='relu')(hidden_layer)
-    hidden_layer = Dropout(rate=0.3)(hidden_layer)
-    hidden_layer = Dense(64, activation='relu')(hidden_layer)
-    hidden_layer = Dropout(rate=0.3)(hidden_layer)
-    hidden_layer = Dense(32, activation='relu')(hidden_layer)
-    hidden_layer = Dropout(rate=0.3)(hidden_layer)
-    output_layer = Dense(1, activation='linear')(hidden_layer)
-    # Define the model
-    model = Model(inputs=[numerical_input, text_input, img_input], outputs=output_layer)
-    # ce bloc est notre modèle
-    print(":coche_blanche: Model initialized")
+def set_nontrainable_layers(model):
+    model.trainable = True
     return model
+def load_vgg_model(input_shape=(128, 128, 3)):
+    model = VGG16(weights="imagenet", include_top=False, input_shape=input_shape)
+    model = set_nontrainable_layers(model)
+    return model
+def add_last_layers(model):
+    '''Take a pre-trained model'''
+    flatten_layer = layers.Flatten()
+    batch_norm_layer = layers.BatchNormalization()
+    dense_layer = layers.Dense(500, activation='relu')
+    drop_out_layer = layers.Dropout(0.3)
+    dense_layer = layers.Dense(128, activation='relu')
+    drop_out_layer = layers.Dropout(0.3)
+    dense_layer = layers.Dense(64, activation='relu')
+    drop_out_layer = layers.Dropout(0.3)
+    prediction_layer = layers.Dense(1, activation='linear')
+    model = models.Sequential([
+        model,
+        flatten_layer,
+        batch_norm_layer,
+        dense_layer,
+        drop_out_layer,
+        prediction_layer
+    ])
+    return model
+def initialize_cnn_model():
+    model = load_vgg_model()
+    model = add_last_layers(model)
+    return model
+
+
+def initialize_metamodel(input_shape_base_pred) :
+    """
+    Initialize the Neural Network with random weights
+    """
+      # Remplacez par la forme réelle des prédictions
+    base_pred_input1 = Input(shape=(1,), name='base_pred_input1')
+    base_pred_input2 = Input(shape=(1,), name='base_pred_input2')
+    base_pred_input3 = Input(shape=(1,), name='base_pred_input3')
+
+    # Concaténez les prédictions pour former les caractéristiques du métamodèle
+    concatenated_features = Concatenate()([base_pred_input1, base_pred_input2,base_pred_input3])
+
+    # Définissez le métamodèle
+    meta_hidden_layer = Dense(128, activation='relu')(concatenated_features)
+    meta_hidden_layer = Dense(64, activation='relu')(meta_hidden_layer)
+    meta_hidden_layer = Dense(32, activation='relu')(meta_hidden_layer)
+    meta_hidden_layer = Dropout(rate=0.3)(meta_hidden_layer)
+    meta_hidden_layer = Dense(8, activation='relu')(meta_hidden_layer)
+    meta_output_layer = Dense(1, activation='linear')(meta_hidden_layer)  # Ajustez selon votre tâche
+
+    # Créez le modèle de stacking
+    meta_model = Model(inputs=[base_pred_input1, base_pred_input2,base_pred_input3], outputs=meta_output_layer)
+
+
+    return meta_model
 
 
 def compile_model(model, target:str=None, learning_rate=0.0001) :
@@ -119,13 +129,14 @@ def compile_model(model, target:str=None, learning_rate=0.0001) :
 
     return model
 
-def train_model(
+def train_model_numeric(
         model,
-        train_dataset,
+        X_num,
+        Y_num,
         target:str="rating",
         batch_size=32,
         patience=10,
-        validation_data=None
+        validation_split=0.2
     ) :
     """
     Fit the model and return a tuple (fitted_model, history)
@@ -143,8 +154,9 @@ def train_model(
             monitor='val_loss', factor=0.1, patience=5, min_lr=0.000005)
 
     history = model.fit(
-        train_dataset,
-        validation_data=validation_data,
+        x=X_num,
+        y=Y_num,
+        validation_split=validation_split,
         epochs=150,
         batch_size=batch_size,
         callbacks=[es,rp],
@@ -152,11 +164,146 @@ def train_model(
     )
 
     if target == "rating":
-        print(f"""✅ Model rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_num rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
     if target == "player":
-        print(f"✅ Model player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+        print(f"✅ Model_num player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+
+    return model, history
+
+def train_model_text(
+        model,
+        X_text,
+        Y_text,
+        target:str="rating",
+        batch_size=32,
+        patience=10,
+        validation_split=0.2
+    ) :
+    """
+    Fit the model and return a tuple (fitted_model, history)
+    """
+    print(Fore.BLUE + "\nTraining model..." + Style.RESET_ALL)
+
+    es = EarlyStopping(
+        monitor="val_loss",
+        patience=patience,
+        restore_best_weights=True,
+        verbose=1
+    )
+
+    rp = ReduceLROnPlateau(
+            monitor='val_loss', factor=0.1, patience=5, min_lr=0.000005)
+
+    history = model.fit(
+        x=X_text,
+        y=Y_text,
+        validation_split=validation_split,
+        epochs=150,
+        batch_size=batch_size,
+        callbacks=[es,rp],
+        verbose=1
+    )
+
+    if target == "rating":
+        print(f"""✅ Model_text rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+
+                                    : loss: {round(np.min(history.history['val_loss']), 2)}""")
+
+    if target == "player":
+        print(f"✅ Model_text player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+
+    return model, history
+
+def train_model_image(
+        model,
+        X_image,
+        Y_image,
+        target:str="rating",
+        batch_size=32,
+        patience=10,
+        validation_split=0.2
+    ) :
+    """
+    Fit the model and return a tuple (fitted_model, history)
+    """
+    print(Fore.BLUE + "\nTraining model..." + Style.RESET_ALL)
+
+    es = EarlyStopping(
+        monitor="val_loss",
+        patience=patience,
+        restore_best_weights=True,
+        verbose=1
+    )
+
+    rp = ReduceLROnPlateau(
+            monitor='val_loss', factor=0.1, patience=5, min_lr=0.000005)
+
+    history = model.fit(
+        x=X_image,
+        y=Y_image,
+        validation_split=validation_split,
+        epochs=150,
+        batch_size=batch_size,
+        callbacks=[es,rp],
+        verbose=1
+    )
+
+    if target == "rating":
+        print(f"""✅ Model_text rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+
+                                    : loss: {round(np.min(history.history['val_loss']), 2)}""")
+
+    if target == "player":
+        print(f"✅ Model_text player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+
+    return model, history
+
+
+
+
+def train_metamodel(
+        model,
+        X_meta ,
+        Y_meta,
+        target:str="rating",
+        batch_size=32,
+        patience=10,
+        validation_split=0.2
+    ) :
+    """
+    Fit the model and return a tuple (fitted_model, history)
+    """
+    print(Fore.BLUE + "\nTraining model..." + Style.RESET_ALL)
+
+    es = EarlyStopping(
+        monitor="val_loss",
+        patience=patience,
+        restore_best_weights=True,
+        verbose=1
+    )
+
+    rp = ReduceLROnPlateau(
+            monitor='val_loss', factor=0.1, patience=5, min_lr=0.000005)
+
+    history = model.fit(
+        x=X_meta,
+        y=Y_meta,
+        validation_split=validation_split,
+        epochs=150,
+        batch_size=batch_size,
+        callbacks=[es,rp],
+        verbose=1
+    )
+
+    if target == "rating":
+        print(f"""✅ Model_num rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+
+                                    : loss: {round(np.min(history.history['val_loss']), 2)}""")
+
+    if target == "player":
+        print(f"✅ Model_num player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
 
     return model, history

@@ -45,32 +45,10 @@ def save_model(model_name:str="model_rating", model: keras.Model = None) -> None
 
     print("✅ Model saved locally")
 
-    if MODEL_TARGET == "gcs":
-        # 🎁 We give you this piece of code as a gift. Please read it carefully! Add a breakpoint if needed!
-
-        model_filename = model_path.split("/")[-1] # e.g. "model_rating_20230208-161047.h5" for instance
-        client = storage.Client()
-        bucket = client.bucket(BUCKET_NAME)
-        blob = bucket.blob(f"{model_name}/{model_filename}")
-        blob.upload_from_filename(model_path)
-
-        print("✅ Model saved to GCS")
-
-        return None
-
     return None
 
 
 def load_model(model_name:str="model_rating" ) -> keras.Model:
-    """
-    Return a saved model:
-    - locally (latest one in alphabetical order)
-    - or from GCS (most recent one) if MODEL_TARGET=='gcs'  --> for unit 02 only
-    - or from MLFLOW (by "stage") if MODEL_TARGET=='mlflow' --> for unit 03 only
-
-    Return None (but do not Raise) if no model is found
-
-    """
 
     if MODEL_TARGET == "local":
         print(Fore.BLUE + f"\nLoad latest {model_name} from local registry..." + Style.RESET_ALL)
@@ -91,28 +69,3 @@ def load_model(model_name:str="model_rating" ) -> keras.Model:
         print("✅ Model loaded from local disk")
 
         return latest_model
-
-    elif MODEL_TARGET == "gcs":
-        # 🎁 We give you this piece of code as a gift. Please read it carefully! Add a breakpoint if needed!
-        print(Fore.BLUE + f"\nLoad latest {model_name} from GCS..." + Style.RESET_ALL)
-
-        client = storage.Client()
-
-        blobs = list(client.get_bucket(BUCKET_NAME).list_blobs(prefix=f"{model_name}/"))
-
-        try:
-            latest_blob = max(blobs, key=lambda x: x.updated)
-
-            latest_model_path_to_save = os.path.join(LOCAL_REGISTRY_PATH, latest_blob.name)
-
-            latest_blob.download_to_filename(latest_model_path_to_save)
-
-            latest_model = keras.models.load_model(latest_model_path_to_save)
-
-            print("✅ Latest model downloaded from cloud storage")
-
-            return latest_model
-        except:
-            print(f"\n❌ No model found in GCS bucket {BUCKET_NAME}")
-
-            return None

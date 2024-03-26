@@ -4,10 +4,10 @@ import numpy as np
 import requests
 
 from sklearn.impute import SimpleImputer, KNNImputer
-from sklearn.preprocessing import RobustScaler, StandardScaler, MinMaxScaler
-from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
-from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
 import tensorflow as tf
 
 from package.scripts.params import *
@@ -95,7 +95,7 @@ def download_image(url, app_id, index=0, folder_name='image_data', size=(256, 25
 
 
 def format_link(app_id):
-    return f'image_data/{app_id}_0.jpg'
+    return f'package/image_data/{app_id}_0.jpg'
 
 
 def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
