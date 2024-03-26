@@ -1,16 +1,25 @@
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+import os
+import pickle
 
 from colorama import Fore, Style
 
-from package.scripts.params import *
-from package.scripts.preprocessor import *
-from package.ml_logics.model import *
-from package.ml_logics.registry import *
-
+from tensorflow import keras
 from keras.preprocessing.text import Tokenizer
-import tensorflow as tf
+from keras.preprocessing.sequence import pad_sequences
+
 from sklearn.model_selection import train_test_split
+
+from package.scripts.preprocessor import clean_data, full_preprocessor
+from package.scripts.params import folder_path,params_file_path
+from package.scripts.max_len import MAX_LEN
+
+from package.ml_logics.model import initialize_model_numeric,initialize_cnn_model,initialize_model_text,initialize_metamodel
+from package.ml_logics.model import compile_model, train_model_numeric, train_model_image,train_model_text,train_metamodel
+
+from package.ml_logics.registry import save_model, load_most_recent_model
 
 def get_data(target: str="rating"):
     # get the data
@@ -55,7 +64,6 @@ def get_test_data(target: str="rating"):
         return None
     return data_X, y
 
-
 def load_and_preprocess_image(path):
     # Charger l'image à partir du disque
     image = tf.io.read_file(path)
@@ -67,14 +75,8 @@ def load_and_preprocess_image(path):
     image /= 255.0
     # Retourner l'image prétraitée
     return image
+
 def preprocess(X: pd.DataFrame) -> np.ndarray :
-    """
-    - Query the raw dataset from Le Wagon's BigQuery dataset
-    - Cache query result as a local CSV if it doesn't exist locally
-    - Process query data
-    - Store processed data on your personal BQ (truncate existing table if it exists)
-    - No need to cache processed data as CSV (it will be cached when queried back from BQ during training)
-    """
 
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
@@ -89,20 +91,46 @@ def preprocess(X: pd.DataFrame) -> np.ndarray :
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts(X_clean["About_The_Game"])
     sequences = tokenizer.texts_to_sequences(X_clean["About_The_Game"])
+
     max_len = max([len(seq) for seq in sequences])
+    #SAUVEGARDE DE MAX LEN COMMENT VARIABLE DANS PARAMS POUR train_text
+    with open(params_file_path, 'w') as file:
+        file.write(f"MAX_LEN = {max_len}\n")
+
     text_tokenize = pad_sequences(sequences, maxlen=max_len,padding='post', truncating='post')
 
     numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
+
     text_input = text_tokenize
+
     image_input = X_preprocess["remainder__Screenshots"].to_numpy()
     images_input = np.array([load_and_preprocess_image(path).numpy() for path in image_input])
+
+    file_path_preproc = os.path.join(folder_path, 'preprocessor.pkl')
+    with open(file_path_preproc, 'wb') as f:
+        pickle.dump(preprocessor, f)
+        print("✅ preprocessor saved")
+    file_path_tok = os.path.join(folder_path, 'tokenizer.pkl')
+    with open(file_path_tok, 'wb') as f:
+        pickle.dump(tokenizer, f)
+        print("✅ tokenizer saved")
+
     print("✅ preprocess() done \n")
 
-    return preprocessor, tokenizer, max_len, numeric_input,text_input,images_input
+    return max_len, numeric_input,text_input,images_input
 
-def preprocess_test(preprocessor,tokenizer, X: pd.DataFrame) -> tf.Tensor :
+def preprocess_test(X: pd.DataFrame) -> tf.Tensor :
 
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
+
+    #import preproc et tokenizer
+    file_path_preproc = os.path.join(folder_path, 'preprocessor.pkl')
+    with open(file_path_preproc, 'rb') as f:
+        preprocessor = pickle.load(f)
+
+    file_path_tok = os.path.join(folder_path, 'tokenizer.pkl')
+    with open(file_path_tok, 'rb') as f:
+        tokenizer = pickle.load(f)
 
     # Process data
     X_clean = clean_data(X,train=True)
@@ -111,8 +139,8 @@ def preprocess_test(preprocessor,tokenizer, X: pd.DataFrame) -> tf.Tensor :
 
     #token pour le texte
     sequences = tokenizer.texts_to_sequences(X_clean["About_The_Game"])
-    max_len = max([len(seq) for seq in sequences])
-    text_tokenize = pad_sequences(sequences, maxlen=max_len,padding='post', truncating='post')
+
+    text_tokenize = pad_sequences(sequences, maxlen=MAX_LEN,padding='post', truncating='post')
 
     numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
     text_input = text_tokenize
@@ -123,27 +151,17 @@ def preprocess_test(preprocessor,tokenizer, X: pd.DataFrame) -> tf.Tensor :
 
     return numeric_input,text_input, images_input
 
-
-
 def train_numeric(
         numeric_input: np.ndarray,
         text_input,
         image_input,
         y_train: pd.DataFrame,
         target: str="rating",
-        learning_rate=0.0001,
         batch_size = 32,
         patience = 20,
         validation_split = 0.2
     ) -> float:
 
-    """
-    - Download processed data from your BQ table (or from cache if it exists)
-    - Train on the preprocessed dataset (which should be ordered by date)
-    - Store training results and model weights
-
-    Return val_mae as a float
-    """
     y_train = y_train.to_numpy()
 
     numeric_input_train, numeric_input_val,text_input_train, text_input_val,image_input_train,image_input_val,\
@@ -151,7 +169,7 @@ def train_numeric(
 
     model = initialize_model_numeric(input_shape=numeric_input_train.shape[-1])
 
-    compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
+    compiled_model = compile_model(model,target=target)
 
     trained_model, history = train_model_numeric(
         compiled_model,
@@ -169,7 +187,7 @@ def train_numeric(
         val_mae = np.min(history.history['val_loss'])
 
     # Save model weight on the hard drive (and optionally on GCS too!)
-    save_model(model_name=f"model_{target}",model=trained_model)
+    save_model(model_name=f"model_{target}",model_type="model_num", model=trained_model)
 
     print("✅ train() done \n")
 
@@ -177,32 +195,26 @@ def train_numeric(
         text_input_train, text_input_val,image_input_train,image_input_val,\
         y_train_train,y_train_val
 
-
 def train_text(
         text_input: np.ndarray,
         y_train: np.ndarray,
-        tokenizer,
-        max_len,
         target: str="rating",
-        learning_rate=0.0001,
         batch_size = 32,
         patience = 20,
         validation_split = 0.2
     ) -> float:
 
-    """
-    - Download processed data from your BQ table (or from cache if it exists)
-    - Train on the preprocessed dataset (which should be ordered by date)
-    - Store training results and model weights
+    max_len = MAX_LEN
 
-    Return val_mae as a float
-    """
+    file_path_tok = os.path.join(folder_path, 'tokenizer.pkl')
+    with open(file_path_tok, 'rb') as f:
+        tokenizer = pickle.load(f)
 
     input_dim=len(tokenizer.word_index)+1
 
     model = initialize_model_text(input_dim=input_dim,max_len=max_len)
 
-    compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
+    compiled_model = compile_model(model,target=target)
 
     trained_model, history = train_model_text(
         compiled_model,
@@ -220,19 +232,16 @@ def train_text(
         val_mae = np.min(history.history['val_loss'])
 
     # Save model weight on the hard drive (and optionally on GCS too!)
-    save_model(model_name=f"model_{target}",model=trained_model)
+    save_model(model_name=f"model_{target}",model_type="model_text", model=trained_model)
 
     print("✅ train() done \n")
 
     return trained_model, val_mae, val_mse
 
-
-
 def train_image(
         image_input: np.ndarray,
         y_train: np.ndarray,
         target: str="rating",
-        learning_rate=0.0001,
         batch_size = 32,
         patience = 20,
         validation_split = 0.2
@@ -243,7 +252,7 @@ def train_image(
 
     model = initialize_cnn_model()
 
-    compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
+    compiled_model = compile_model(model,target=target)
 
     trained_model, history = train_model_image(
         compiled_model,
@@ -261,7 +270,7 @@ def train_image(
         val_mae = np.min(history.history['val_loss'])
 
     # Save model weight on the hard drive (and optionally on GCS too!)
-    save_model(model_name=f"model_{target}",model=trained_model)
+    save_model(model_name=f"model_{target}",model_type="model_image", model=trained_model)
 
     print("✅ train() done \n")
 
@@ -272,36 +281,26 @@ def train_meta_model(
         X_val_text: np.ndarray,
         X_val_image: np.ndarray,
         y_val: np.ndarray,
-        trained_model_text,
-        trained_model_num,
-        trained_model_image,
         target: str="rating",
-        learning_rate=0.0001,
         batch_size = 32,
         patience = 20,
         validation_split = 0.2
     ) -> float:
 
-    """
-    - Download processed data from your BQ table (or from cache if it exists)
-    - Train on the preprocessed dataset (which should be ordered by date)
-    - Store training results and model weights
+    trained_model_num = load_most_recent_model(folder_path, model_name=f"model_{target}", model_type='model_num')
+    trained_model_text = load_most_recent_model(folder_path, model_name=f"model_{target}", model_type='model_text')
+    trained_model_image = load_most_recent_model(folder_path, model_name=f"model_{target}", model_type='model_image')
 
-    Return val_mae as a float
-    """
-    #X_val_image_reshape = np.array([load_and_preprocess_image(path).numpy() for path in X_val_image])
     preds_numeric = trained_model_num.predict(X_val_num)
     preds_text = trained_model_text.predict(X_val_text)
     preds_new_image = trained_model_image.predict(X_val_image)
     X_meta = {"base_pred_input1":preds_numeric,
-                   "base_pred_input2":preds_text,
-                   "base_pred_input3":preds_new_image}
+                "base_pred_input2":preds_text,
+                "base_pred_input3":preds_new_image}
 
-    input_size = preds_numeric.shape[1] + preds_text.shape[1] + preds_new_image.shape[1]
+    model = initialize_metamodel()
 
-    model = initialize_metamodel(input_size)
-
-    compiled_model = compile_model(model,target=target,learning_rate=learning_rate)
+    compiled_model = compile_model(model,target=target)
 
     trained_model, history = train_metamodel(
         compiled_model,
@@ -319,13 +318,11 @@ def train_meta_model(
         val_mae = np.min(history.history['val_loss'])
 
     # Save model weight on the hard drive (and optionally on GCS too!)
-    save_model(model_name=f"model_{target}",model=trained_model)
+    save_model(model_name=f"model_{target}",model_type="model_meta", model=trained_model)
 
     print("✅ train() done \n")
 
     return trained_model, val_mae, val_mse
-
-
 
 def evaluate_model(
         model,
@@ -363,38 +360,12 @@ def evaluate_model(
 
     return metrics
 
-
-"""
-def pred(X_pred: pd.DataFrame = None) -> np.ndarray:
-
-    print("\n⭐️ Use case: predict")
-
-    if X_pred is None:
-        X_pred = pd.DataFrame(dict(
-        pickup_datetime=[pd.Timestamp("2013-07-06 17:18:00", tz='UTC')],
-        pickup_longitude=[-73.950655],
-        pickup_latitude=[40.783282],
-        dropoff_longitude=[-73.984365],
-        dropoff_latitude=[40.769802],
-        passenger_count=[1],
-    ))
-
-    model = load_model()
-    assert model is not None
-
-    X_processed = preprocess_features(X_pred)
-    y_pred = model.predict(X_processed)
-
-    print("\n✅ prediction done: ", y_pred, y_pred.shape, "\n")
-    return y_pred
-"""
-
 if __name__ == '__main__':
 
     # training rating model
-    data_X, data_Y = get_data(target="rating")
+    data_X, data_Y = get_data(target="player")
 
-    preprocessor, tokeniser, max_len, numeric_input,text_input,image_input = preprocess(data_X[:200])
+    max_len, numeric_input,text_input,image_input = preprocess(data_X[:200])
 
     trained_model_num, val_mae, val_mse ,numeric_input_val,\
         text_input_train, text_input_val,image_input_train,image_input_val,\
@@ -403,20 +374,15 @@ if __name__ == '__main__':
         text_input=text_input,
         image_input=image_input,
         y_train=data_Y[:200],
-        target="rating",
-        learning_rate=0.0001,
+        target="player",
         batch_size = 32,
         patience = 20,
         validation_split = 0.2)
 
-
     trained_model_text, _, _ = train_text(
         text_input=text_input_train,
         y_train=y_train_train,
-        tokenizer=tokeniser,
-        max_len=max_len,
-        target="rating",
-        learning_rate=0.0001,
+        target="player",
         batch_size = 32,
         patience = 5,
         validation_split = 0.2)
@@ -424,8 +390,7 @@ if __name__ == '__main__':
     trained_model_image, _, _ =train_image(
         image_input=image_input_train,
         y_train=y_train_train,
-        target="rating",
-        learning_rate=0.0001,
+        target="player",
         batch_size = 32,
         patience = 20,
         validation_split = 0.2
@@ -436,54 +401,27 @@ if __name__ == '__main__':
         X_val_text=text_input_val,
         X_val_image=image_input_val,
         y_val=y_train_val,
-        trained_model_text=trained_model_text,
-        trained_model_num=trained_model_num,
-        trained_model_image=trained_model_image,
-        target="rating",
-        learning_rate=0.0001,
+        target="player",
         batch_size = 32,
         patience = 20,
         validation_split = 0.2
     )
 
     #testing rating model
-    data_X_test, y_test = get_test_data(target="rating")
+    data_X_test, y_test = get_test_data(target="player")
 
-    numeric_input_test,text_input_test, image_input_test = preprocess_test(preprocessor=preprocessor,tokenizer=tokeniser,X=data_X_test)
+    numeric_input_test,text_input_test, image_input_test = preprocess_test(X=data_X_test)
 
-    evaluate_model(trained_model_num,numeric_input_test,y_test,batch_size=32)
-    evaluate_model(trained_model_text,text_input_test,y_test,batch_size=32)
-    evaluate_model(trained_model_image,image_input_test,y_test,batch_size=32)
+    evaluate_model(trained_model_num,numeric_input_test,y_test,batch_size=32,target="player")
+    evaluate_model(trained_model_text,text_input_test,y_test,batch_size=32,target="player")
+    evaluate_model(trained_model_image,image_input_test,y_test,batch_size=32,target="player")
+
     preds_new_numeric = trained_model_num.predict(numeric_input_test)
     preds_new_text = trained_model_text.predict(text_input_test)
-    #image_input_test_resize = np.array([load_and_preprocess_image(path).numpy() for path in image_input_test])
     preds_new_image = trained_model_image.predict(image_input_test)
+
     X_meta_test = {"base_pred_input1":preds_new_numeric,
                    "base_pred_input2":preds_new_text,
                    "base_pred_input3":preds_new_image}
+
     evaluate_model(trained_model_meta,X_meta_test,y_test,batch_size=32)
-
-
-    # training player model
-    # data_X, data_Y = get_data(target="player")
-
-    # preprocessor, numeric_input,text_input,image_input = preprocess(data_X)
-
-    # trained_model, _, _ = train(numeric_input=numeric_input,
-    #       text_input=text_input,
-    #       image_input=image_input,
-    #       y_train=data_Y,
-    #       target="player",
-    #       learning_rate=0.0001,
-    #       batch_size = 32,
-    #       patience = 20,
-    #       validation_split = 0.2)
-
-    # testing rating model
-    #data_X_test, y_test = get_test_data(target="player")
-
-    #X_test = preprocess_test(preprocessor=preprocessor,X=data_X_test)
-
-    #evaluate_model(trained_model,X_test,y_test,target="player",batch_size=32)
-
-    #pred()

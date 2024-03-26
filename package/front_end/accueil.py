@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from params_acc import *
+from params_acc import languages_options,genre_options,category_options,SERVICE_URL
 
 # Définition des noms des colonnes et leurs étiquettes correspondantes
 text_col_names = [("Developers", "Développeurs"), ("Publishers", "Éditeurs")]

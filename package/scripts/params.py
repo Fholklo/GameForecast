@@ -7,19 +7,13 @@ GCP_PROJECT = os.environ.get("GCP_PROJECT")
 GCP_PROJECT_WAGON = os.environ.get("GCP_PROJECT_WAGON")
 GCP_REGION = os.environ.get("GCP_REGION")
 
-BUCKET_NAME = os.environ.get("BUCKET_NAME")
-INSTANCE = os.environ.get("INSTANCE")
-
 GAR_IMAGE = os.environ.get("GAR_IMAGE")
 GAR_MEMORY = os.environ.get("GAR_MEMORY")
-
 
 ############## CONSTANTS ###################
 #Path
 LOCAL_DATA_PATH = os.path.join(os.path.expanduser('~'), ".lewagon", "gameforecast", "data")
 LOCAL_REGISTRY_PATH =  os.path.join(os.path.expanduser('~'), ".lewagon", "gameforecast", "training_outputs")
-
-#Data
 
 #################
 ### MASTER
@@ -39,44 +33,9 @@ with open('package/param_json/publisher_categories_dict.json', 'r') as json_file
 #with open('../package/param_json/publisher_categories_dict.json', 'r') as json_file2:
 #    publishers_category_dict = json.load(json_file2)
 
-# Catégories: nb de jeu par dévelopeur
-#     if count == 0:
-#         return "0"
-#     elif count == 1:
-#         return "1"
-#     elif count == 2:
-#         return "2"
-#     elif count == 3:
-#         return "3"
-#     elif count == 4:
-#         return "4"
-#     elif count == 5:
-#         return "5"
-#     elif 6 <= count <= 10:
-#         return "6"
-#     elif 11 <= count <= 20:
-#         return "7"
-#     else:  # Plus de 20
-#         return "8"
+#Preprocessing
 
-# Catégories: nb de jeu par publisher
-#     if count == 0:
-#         return "0"
-#     elif count == 1:
-#         return "1"
-#     elif count == 2:
-#         return "2"
-#     elif count == 3:
-#         return "3"
-#     elif count == 4:
-#         return "4"
-#     elif count == 5:
-#         return "5"
-#     elif 6 <= count <= 10:
-#         return "6"
-#     else:  # Plus de 10
-#         return "7"
-
+FEATURE_SELECTION_V2 = ["App_ID","Release_Date","Price","About_The_Game","Supported_Languages","Support_URL","Windows","Mac","Linux","Achievements","Developers","Publishers","Categories","Genres","Screenshots"]
 
 genre_options = ['Accounting', 'Action', 'Adventure', 'Animation & Modeling', 'Autre',
                  'Audio Production', 'Casual', 'Design & Illustration', 'Early Access',
@@ -110,44 +69,12 @@ languages = [
     "other_lang"             # Autre langue (remplacez "other_lang" par le nom spécifique si vous le connaissez)
 ]
 
-required_fields = ['App_ID', 'Developers', 'Publishers', 'Achievements', 'Price']
-
-
-#Preprocess
-FEATURE_SELECTION_V1 = ["Release_Date","Price","Supported_Languages","Support_URL","Windows","Mac","Linux","Achievements","Developers","Publishers","Categories","Genres"]
-FEATURE_SELECTION_V2 = ["App_ID","Release_Date","Price","About_The_Game","Supported_Languages","Support_URL","Windows","Mac","Linux","Achievements","Developers","Publishers","Categories","Genres","Screenshots"]
-
-UNIQUE_LANGUAGE = ["english",'French', 'german', 'italian', 'spanish - spain',
-       'spanish - latin america', 'simplified chinese',
-       'traditional chinese', 'russian', 'japanese', 'korean',
-       'portuguese - brazil', 'turkish', 'welsh', 'vietnamese', 'danish',
-       'portuguese - portugal', 'dutch', 'polish', 'czech', 'ukrainian',
-       'arabic', 'bulgarian', 'hungarian', 'greek', 'norwegian',
-       'romanian', 'thai', 'finnish', 'swedish', 'croatian', 'estonian',
-       'hebrew', 'icelandic', 'latvian', 'lithuanian', 'maori', 'slovak',
-       'slovenian', 'indonesian', 'serbian', 'uzbek', 'urdu', 'armenian',
-       'igbo', 'sindhi', 'sinhala', 'cherokee', 'galician', 'catalan',
-       'afrikaans', 'kannada', 'luxembourgish', 'hindi', 'gujarati',
-       'kyrgyz', 'kazakh', 'turkmen', 'kinyarwanda',
-       'tajik', 'odia', 'konkani', 'bangla', 'nepali', 'basque',
-       'tigrinya', 'swahili', 'punjabi (gurmukhi)', 'punjabi (shahmukhi)',
-       'georgian', 'wolof', 'bosnian', 'persian', 'telugu', 'tamil',
-       'irish', 'valencian', 'belarusian', 'quechua', 'zulu', 'xhosa',
-       'sotho', 'sorani', 'yoruba', 'uyghur', 'scots', 'tswana',
-       'filipino', 'mongolian', 'hausa', 'dari', 'azerbaijani', 'amharic',
-       'albanian', 'assamese', 'tatar', 'macedonian', 'marathi',
-       'malayalam', 'malay', 'maltese', 'khmer', 'german;',
-       'hungarian,polish', 'english dutch',
-       'traditional chinese (text only)', 'lang_slovakian']
-
-EUROPEAN_LANGUAGES = ["German", "French", "Italian", 'Spanish - Spain', "Portuguese - Portugal"]
-
-TOP_LANGUAGES = 10
-
-
+european_langs = ["French", "German", "Italian", "Portuguese - Portugal", "Spanish - Spain"]
 
 days_in_year = 365.25  # moyenne en tenant compte des années bissextiles
 
 months_in_year = 12
 
-MAX_SEQUENCE_LENGTH = 20
+#main
+folder_path = 'package/tok_preproc_model'
+params_file_path = 'package/scripts/max_len.py'

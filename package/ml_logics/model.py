@@ -1,30 +1,26 @@
 import numpy as np
-import time
-import tensorflow as tf
 
 from colorama import Fore, Style
-from keras import models,layers, regularizers, optimizers
+from keras import models,layers, optimizers
 from keras.models import Model
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.models import Sequential
-from keras.layers import Embedding, Dense, Flatten, LSTM, Rescaling, Reshape, Dropout, Input, Concatenate
+from keras.layers import Embedding, Dense, LSTM, Dropout, Input, Concatenate
 from keras.applications import VGG16
-from keras.preprocessing.sequence import pad_sequences
+
 
 def initialize_model_numeric(input_shape: int) :
     """
-    Initialize the Neural Network with random weights
+    Initialize the Neural Network for numeric data
     """
-    #reg = regularizers.l1_l2(l2=0.005)
-
     model = models.Sequential()
     model.add(layers.Input(shape=input_shape))
-    model.add(layers.Dense(128, activation="relu")) #, kernel_regularizer=reg ?
-    #model.add(layers.BatchNormalization(momentum=0.9))
-    model.add(layers.Dense(64, activation="relu"))
+    model.add(layers.Dense(128, activation="relu"))
+    model.add(layers.BatchNormalization())
     model.add(layers.Dense(64, activation="relu"))
     model.add(layers.Dropout(rate=0.3))
     model.add(layers.Dense(32, activation="relu"))
+    model.add(layers.BatchNormalization())
     model.add(layers.Dropout(rate=0.3))
     model.add(layers.Dense(1, activation="linear"))
 
@@ -34,53 +30,54 @@ def initialize_model_numeric(input_shape: int) :
 
 def initialize_model_text(input_dim: int,max_len:int) :
     """
-    Initialize the Neural Network with random weights
+    Initialize the Neural Network for text data
     """
     model = Sequential([
-        Embedding(input_dim=input_dim, output_dim=64, input_length=max_len),
+        Embedding(input_dim=input_dim, output_dim=256, input_length=max_len),
+        LSTM(128,return_sequences=True),
+        Dropout(0.2),
         LSTM(64),
+        Dropout(0.2),
         Dense(1, activation='linear')
     ])
     print("✅ Model initialized")
 
     return model
 
-def set_nontrainable_layers(model):
-    model.trainable = True
-    return model
-def load_vgg_model(input_shape=(128, 128, 3)):
-    model = VGG16(weights="imagenet", include_top=False, input_shape=input_shape)
-    model = set_nontrainable_layers(model)
-    return model
-def add_last_layers(model):
-    '''Take a pre-trained model'''
-    flatten_layer = layers.Flatten()
-    batch_norm_layer = layers.BatchNormalization()
-    dense_layer = layers.Dense(500, activation='relu')
-    drop_out_layer = layers.Dropout(0.3)
-    dense_layer = layers.Dense(128, activation='relu')
-    drop_out_layer = layers.Dropout(0.3)
-    dense_layer = layers.Dense(64, activation='relu')
-    drop_out_layer = layers.Dropout(0.3)
-    prediction_layer = layers.Dense(1, activation='linear')
-    model = models.Sequential([
-        model,
-        flatten_layer,
-        batch_norm_layer,
-        dense_layer,
-        drop_out_layer,
-        prediction_layer
-    ])
-    return model
-def initialize_cnn_model():
-    model = load_vgg_model()
-    model = add_last_layers(model)
-    return model
-
-
-def initialize_metamodel(input_shape_base_pred) :
+def initialize_cnn_model(input_shape=(128, 128, 3)):
     """
-    Initialize the Neural Network with random weights
+    Initialize a CNN model with VGG16 as the base for timage data
+    """
+    # Créer un modèle séquentiel
+    model = models.Sequential()
+
+    # Charger le modèle VGG16 sans les couches supérieures
+    vgg_base = VGG16(weights='imagenet', include_top=False, input_shape=input_shape)
+
+    # Définir les couches du modèle VGG16 comme non-entraînables (freeze)
+    for layer in vgg_base.layers:
+        layer.trainable = True
+
+    # Ajouter le modèle VGG16 comme base du modèle séquentiel
+    model.add(vgg_base)
+
+    # Ajouter les nouvelles couches
+    model.add(layers.Flatten())
+    model.add(layers.BatchNormalization())
+    model.add(layers.Dense(128, activation='relu'))
+    model.add(layers.Dropout(0.3))
+    model.add(layers.BatchNormalization())
+    model.add(layers.Dense(64, activation='relu'))
+    model.add(layers.Dropout(0.3))
+    model.add(layers.Dense(1, activation='linear'))
+
+    print("✅ CNN model with VGG base initialized")
+
+    return model
+
+def initialize_metamodel() :
+    """
+    Initialize the Neural Network to compute the 3 models
     """
       # Remplacez par la forme réelle des prédictions
     base_pred_input1 = Input(shape=(1,), name='base_pred_input1')
@@ -96,7 +93,7 @@ def initialize_metamodel(input_shape_base_pred) :
     meta_hidden_layer = Dense(32, activation='relu')(meta_hidden_layer)
     meta_hidden_layer = Dropout(rate=0.3)(meta_hidden_layer)
     meta_hidden_layer = Dense(8, activation='relu')(meta_hidden_layer)
-    meta_output_layer = Dense(1, activation='linear')(meta_hidden_layer)  # Ajustez selon votre tâche
+    meta_output_layer = Dense(1, activation='linear')(meta_hidden_layer)
 
     # Créez le modèle de stacking
     meta_model = Model(inputs=[base_pred_input1, base_pred_input2,base_pred_input3], outputs=meta_output_layer)
@@ -104,12 +101,10 @@ def initialize_metamodel(input_shape_base_pred) :
 
     return meta_model
 
-
-def compile_model(model, target:str=None, learning_rate=0.0001) :
+def compile_model(model, target:str=None) :
     """
     Compile the Neural Network
     """
-
     initial_learning_rate = 0.0001
     lr_schedule = optimizers.schedules.ExponentialDecay(
         initial_learning_rate,
@@ -118,7 +113,6 @@ def compile_model(model, target:str=None, learning_rate=0.0001) :
         staircase=True)
 
     optimizer = optimizers.Adam(learning_rate=lr_schedule)
-    #optimizer = optimizers.Adam(learning_rate=learning_rate)
 
     if target == "rating":
         model.compile(loss="mse", optimizer=optimizer, metrics=["mae"])
@@ -164,12 +158,12 @@ def train_model_numeric(
     )
 
     if target == "rating":
-        print(f"""✅ Model_num rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_num {target} trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
     if target == "player":
-        print(f"✅ Model_num player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+        print(f"✅ Model_num {target} trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
 
     return model, history
 
@@ -208,12 +202,12 @@ def train_model_text(
     )
 
     if target == "rating":
-        print(f"""✅ Model_text rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_text {target} trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
     if target == "player":
-        print(f"✅ Model_text player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+        print(f"✅ Model_text {target} trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
 
     return model, history
 
@@ -252,17 +246,14 @@ def train_model_image(
     )
 
     if target == "rating":
-        print(f"""✅ Model_text rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_text {target} trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
     if target == "player":
-        print(f"✅ Model_text player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+        print(f"✅ Model_text {target} trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
 
     return model, history
-
-
-
 
 def train_metamodel(
         model,
@@ -299,11 +290,11 @@ def train_metamodel(
     )
 
     if target == "rating":
-        print(f"""✅ Model_num rating trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_metamodel {target} trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
     if target == "player":
-        print(f"✅ Model_num player trained with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
+        print(f"✅ Model_metamodel {target} with : min val RMSLE: {round(np.min(history.history['val_loss']), 2)}")
 
     return model, history

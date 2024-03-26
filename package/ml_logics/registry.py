@@ -5,8 +5,8 @@ import pickle
 
 from colorama import Fore, Style
 from tensorflow import keras
-from package.scripts.params import *
-from google.cloud import storage
+from package.scripts.params import LOCAL_REGISTRY_PATH,MODEL_TARGET,folder_path
+
 
 def save_results(params: dict, metrics: dict) -> None:
     """
@@ -30,42 +30,50 @@ def save_results(params: dict, metrics: dict) -> None:
 
     print("✅ Results saved locally")
 
-
-def save_model(model_name:str="model_rating", model: keras.Model = None) -> None:
+def save_model(model_name:str="model_rating",model_type : str=None, model: keras.Model = None) -> None:
     """
     Persist trained model locally on the hard drive at f"{LOCAL_REGISTRY_PATH}/models/{timestamp}.h5"
-    - if MODEL_TARGET='gcs', also persist it in your bucket on GCS at "models/{timestamp}.h5" --> unit 02 only
+
     """
 
     timestamp = time.strftime("%Y%m%d-%H%M%S")
 
     # Save model locally
-    model_path = os.path.join(LOCAL_REGISTRY_PATH, "models",model_name,f"{model_name}_{timestamp}.h5")
+    model_path = os.path.join(folder_path,model_name,model_type, f"{model_name}_{model_type}_{timestamp}.h5")
     model.save(model_path)
 
     print("✅ Model saved locally")
 
     return None
 
+def load_most_recent_model(folder_path, model_name, model_type):
+    """
+    Charge le modèle le plus récent à partir d'un sous-dossier spécifié.
 
-def load_model(model_name:str="model_rating" ) -> keras.Model:
+    Args:
+    folder_path (str): Chemin du dossier contenant les sous-dossiers des modèles.
+    model_type (str): Type de modèle ('model_num', 'model_text', 'model_image').
 
-    if MODEL_TARGET == "local":
-        print(Fore.BLUE + f"\nLoad latest {model_name} from local registry..." + Style.RESET_ALL)
+    Returns:
+    Le modèle chargé si trouvé, sinon None.
+    """
+    # Construire le chemin complet vers le sous-dossier du modèle
+    file_folder_model = os.path.join(folder_path, model_name, model_type)
 
-        # Get the latest model version name by the timestamp on disk
-        local_model_directory = os.path.join(LOCAL_REGISTRY_PATH, "models",model_name)
-        local_model_paths = glob.glob(f"{local_model_directory}/*")
+    # Vérifier si le dossier existe
+    if os.path.exists(file_folder_model):
+        # Liste de tous les fichiers de modèle dans le sous-dossier
+        model_files = sorted([os.path.join(file_folder_model, f) for f in os.listdir(file_folder_model) if os.path.isfile(os.path.join(file_folder_model, f))])
+        # Trouver le chemin du modèle le plus récent, si la liste n'est pas vide
+        most_recent_model_path = model_files[-1] if model_files else None
+    else:
+        most_recent_model_path = None
 
-        if not local_model_paths:
-            return None
+    # Charger et retourner le modèle le plus récent, si existant
+    if most_recent_model_path:
+        print(f"✅ {model_type} loaded ")
+        return keras.models.load_model(most_recent_model_path)
 
-        most_recent_model_path_on_disk = sorted(local_model_paths)[-1]
-
-        print(Fore.BLUE + f"\nLoad latest {model_name} from disk..." + Style.RESET_ALL)
-
-        latest_model = keras.models.load_model(most_recent_model_path_on_disk)
-
-        print("✅ Model loaded from local disk")
-
-        return latest_model
+    else:
+        print(f"Aucun modèle trouvé dans le dossier spécifié pour {model_type}.")
+        return None

@@ -1,77 +1,15 @@
-import pandas as pd
-from datetime import datetime
 import numpy as np
+import pandas as pd
+import tensorflow as tf
 import requests
 
 from sklearn.impute import SimpleImputer, KNNImputer
-from sklearn.preprocessing import RobustScaler
-from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import RobustScaler, OrdinalEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-import tensorflow as tf
 
-from package.scripts.params import *
-
-def clean_target(data:pd.DataFrame) -> pd.DataFrame :
-    '''clean and cut the target'''
-    data = data[data['Month'] != 'Last 30 Days']
-    data['Month'] = pd.to_datetime(data['Month'])
-    counts = data['App_ID'].value_counts()
-    data = data[data['App_ID'].isin(counts[counts > 1].index)]
-    data = data[(data['Month'] >= '2012-07-01') & (data['Month'] <= '2024-01-31')]
-
-    return data
-
-def only_last_month_v1_target(data:pd.DataFrame) -> pd.DataFrame :
-    '''V1 : select only the last 2 month to predict the avg # of players'''
-
-    data = data.groupby('App_ID',sort=False).last().reset_index()
-    data.drop(columns='Month',inplace=True)
-    return data
-
-def transform_language_features(data_X: pd.DataFrame) -> pd.DataFrame:
-    assert isinstance(data_X, pd.DataFrame)
-
-    unique_languages = [lang.title() for lang in UNIQUE_LANGUAGE]
-    # initialize lists to store languages and their proportions
-    language_proportions = {}
-
-    # calculate proportion for each language
-    for lang in unique_languages:
-        lang_count = (data_X['Supported_Languages'].str.contains(lang).sum()) / len(data_X)
-        language_proportions[lang] = lang_count
-
-    # order depending on language proportions
-    sorted_languages = sorted(language_proportions.items(), key=lambda x: x[1], reverse=True)
-
-    # define european language
-    language_proportions['European'] = language_proportions['German'] + language_proportions['French'] + language_proportions['Italian'] + language_proportions['Spanish - Spain'] + language_proportions['Portuguese - Portugal']
-
-    # Initialize top languages
-    top_languages = []
-
-    # iterate over the languages to add them to the list
-    for lang, proportion in sorted_languages:
-        if lang not in EUROPEAN_LANGUAGES:
-            top_languages.append(lang)
-        if len(top_languages) == TOP_LANGUAGES:
-            break
-
-    # make every language a colomn
-    for lang in top_languages:
-        if lang == 'European':  # Utilisez '==' pour la comparaison d'égalité, pas '='
-            data_X[lang] = data_X['Supported_Languages'].str.contains("German|French|Italian|Spanish - Spain|Portuguese - Portugal", case=False, regex=True)
-        else:
-            data_X[lang] = data_X['Supported_Languages'].str.contains(lang, case=False, regex=True)
-
-        data_X[lang] = data_X[lang].astype(int)
-
-    data_X['other_lang'] = ~data_X['Supported_Languages'].str.contains('|'.join(top_languages), case=False, regex=True)
-    data_X['other_lang'] = data_X['other_lang'].astype(int)
-
-    data_X = data_X[data_X['English'] != 0]
-
-    return data_X
+from package.scripts.params import FEATURE_SELECTION_V2,languages,days_in_year,months_in_year,genre_options,category_options
+from package.scripts.params import developer_categories_dict,publishers_category_dict, european_langs
 
 def download_image(url, app_id, index=0, folder_name='image_data', size=(256, 256)):
     try:
@@ -93,21 +31,17 @@ def download_image(url, app_id, index=0, folder_name='image_data', size=(256, 25
         print(f"Erreur lors du téléchargement de {url}: {e}")
         return None
 
-
 def format_link(app_id):
     return f'package/image_data/{app_id}_0.jpg'
-
 
 def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
     '''clean the features before entering pipelines'''
 
     data_X = data_X[FEATURE_SELECTION_V2].copy()
 
-
     #Supported_Languages processing
     data_X.Supported_Languages.fillna('Missing',inplace=True)
     data_X['Supported_Languages'] = data_X['Supported_Languages'].apply(lambda x: x.split(', '))
-    european_langs = ["French", "German", "Italian", "Portuguese - Portugal", "Spanish - Spain"]
     data_X["European languages"] = data_X['Supported_Languages'].apply(lambda langs: 1 \
         if any(lang in langs for lang in european_langs) else 0)
     for language in languages:
@@ -128,9 +62,6 @@ def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
     data_X['month_cos'] = np.cos(2 * np.pi * data_X['Release_Date'].dt.month / months_in_year)
     data_X['year'] = data_X['Release_Date'].dt.year
     data_X.drop(columns="Release_Date",inplace=True)
-
-    # keep only games with at least english language
-    #data_X = transform_language_features(data_X)
 
     #catégories pour dévelopers
     data_X['Developers'] = data_X['Developers'].fillna(-1)
@@ -185,7 +116,6 @@ def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
 
     if train:
         # This just copies chemins_images, could use directly
-        # Now, create a DataFrame
         data_X["Screenshots"] = data_X["App_ID"].apply(format_link)
     else:
         download_image(url=data_X["Screenshots"],app_id=data_X["App_ID"])
@@ -199,7 +129,6 @@ def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
 
 def full_preprocessor():
     """Create a pipeline to preprocess data"""
-
     # numerical features
     robust_features = ["Price", "Achievements","year"]
     # numerical pipeline
@@ -229,5 +158,79 @@ def full_preprocessor():
         ("cat_pipeline", categorical_pipeline, ['Developers', 'Publishers']) # cat_features # type: ignore
     ], remainder="passthrough").set_output(transform="pandas")
 
-
     return preprocessor
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def clean_target(data:pd.DataFrame) -> pd.DataFrame :
+#     '''clean and cut the target'''
+#     data = data[data['Month'] != 'Last 30 Days']
+#     data['Month'] = pd.to_datetime(data['Month'])
+#     counts = data['App_ID'].value_counts()
+#     data = data[data['App_ID'].isin(counts[counts > 1].index)]
+#     data = data[(data['Month'] >= '2012-07-01') & (data['Month'] <= '2024-01-31')]
+
+#     return data
+
+# def only_last_month_v1_target(data:pd.DataFrame) -> pd.DataFrame :
+#     '''V1 : select only the last 2 month to predict the avg # of players'''
+
+#     data = data.groupby('App_ID',sort=False).last().reset_index()
+#     data.drop(columns='Month',inplace=True)
+#     return data
+
+# def transform_language_features(data_X: pd.DataFrame) -> pd.DataFrame:
+#     assert isinstance(data_X, pd.DataFrame)
+
+#     unique_languages = [lang.title() for lang in UNIQUE_LANGUAGE]
+#     # initialize lists to store languages and their proportions
+#     language_proportions = {}
+
+#     # calculate proportion for each language
+#     for lang in unique_languages:
+#         lang_count = (data_X['Supported_Languages'].str.contains(lang).sum()) / len(data_X)
+#         language_proportions[lang] = lang_count
+
+#     # order depending on language proportions
+#     sorted_languages = sorted(language_proportions.items(), key=lambda x: x[1], reverse=True)
+
+#     # define european language
+#     language_proportions['European'] = language_proportions['German'] + language_proportions['French'] + language_proportions['Italian'] + language_proportions['Spanish - Spain'] + language_proportions['Portuguese - Portugal']
+
+#     # Initialize top languages
+#     top_languages = []
+
+#     # iterate over the languages to add them to the list
+#     for lang, proportion in sorted_languages:
+#         if lang not in EUROPEAN_LANGUAGES:
+#             top_languages.append(lang)
+#         if len(top_languages) == TOP_LANGUAGES:
+#             break
+
+#     # make every language a colomn
+#     for lang in top_languages:
+#         if lang == 'European':  # Utilisez '==' pour la comparaison d'égalité, pas '='
+#             data_X[lang] = data_X['Supported_Languages'].str.contains("German|French|Italian|Spanish - Spain|Portuguese - Portugal", case=False, regex=True)
+#         else:
+#             data_X[lang] = data_X['Supported_Languages'].str.contains(lang, case=False, regex=True)
+
+#         data_X[lang] = data_X[lang].astype(int)
+
+#     data_X['other_lang'] = ~data_X['Supported_Languages'].str.contains('|'.join(top_languages), case=False, regex=True)
+#     data_X['other_lang'] = data_X['other_lang'].astype(int)
+
+#     data_X = data_X[data_X['English'] != 0]
+
+#     return data_X

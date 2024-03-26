@@ -2,13 +2,19 @@ from fastapi import FastAPI
 import pandas as pd
 from tensorflow import keras
 
-#from package.ml_logics.registry import *
-from package.main import preprocess
-
+from package.main import preprocess_test, load_most_recent_model
+from package.front_end.params_acc import folder_path_player,folder_path_rating
 app = FastAPI()
-#app.state.model_rating = load_model("model_rating")
-app.state.model_rating =keras.models.load_model("model_rating_20240321-102424.h5")
-#app.state.model_player_r = load_model("model_player_r")
+
+app.state.model_rating_num =keras.models.load_model("")
+app.state.model_rating_text =keras.models.load_model("")
+app.state.model_rating_image =keras.models.load_model("")
+app.state.model_rating_metamodel =keras.models.load_model("")
+
+app.state.model_player_num =keras.models.load_model("")
+app.state.model_player_text =keras.models.load_model("")
+app.state.model_player_image =keras.models.load_model("")
+app.state.model_player_metamodel =keras.models.load_model("")
 
 @app.get("/")
 def root():
@@ -44,14 +50,27 @@ def predict_rating(
         Achievements= [Achievements],
         Price= [Price],
     ))
-    preprocessor, X_pred_preprocess = preprocess(X_pred)
-    y_pred = app.state.model_rating.predict(X_pred_preprocess)
+    numeric_input,text_input, images_input = preprocess_test(X_pred)
+
+    trained_model_num = load_most_recent_model(folder_path_rating, 'model_num')
+    trained_model_text = load_most_recent_model(folder_path_rating, 'model_text')
+    trained_model_image = load_most_recent_model(folder_path_rating, 'model_image')
+
+    preds_new_numeric = trained_model_num.predict(numeric_input)
+    preds_new_text = trained_model_text.predict(text_input)
+    preds_new_image = trained_model_image.predict(images_input)
+
+    X_meta_test = {"base_pred_input1":preds_new_numeric,
+                   "base_pred_input2":preds_new_text,
+                   "base_pred_input3":preds_new_image}
+
+
+    y_pred = app.state.model_rating_metamodel.predict(X_meta_test)
 
     return {"Rating" : float(y_pred)}
 
-
-
 @app.get("/predict_player_release")
+
 def predict_player_release(
     App_ID: int, #1546456
     supported_languages: str, # English, French, etc..
@@ -86,7 +105,21 @@ def predict_player_release(
         price= [price]
     ))
 
-    preprocessor, X_pred_preprocess, _ = preprocess(X_pred)
-    y_pred = app.state.model_player.predict(X_pred_preprocess)
+    numeric_input,text_input, images_input = preprocess_test(X_pred)
+
+    trained_model_num = load_most_recent_model(folder_path_player, 'model_num')
+    trained_model_text = load_most_recent_model(folder_path_player, 'model_text')
+    trained_model_image = load_most_recent_model(folder_path_player, 'model_image')
+
+    preds_new_numeric = trained_model_num.predict(numeric_input)
+    preds_new_text = trained_model_text.predict(text_input)
+    preds_new_image = trained_model_image.predict(images_input)
+
+    X_meta_test = {"base_pred_input1":preds_new_numeric,
+                   "base_pred_input2":preds_new_text,
+                   "base_pred_input3":preds_new_image}
+
+
+    y_pred = app.state.model_rating_metamodel.predict(X_meta_test)
 
     return {"Peak player" : float(y_pred)}
