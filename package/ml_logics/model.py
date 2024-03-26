@@ -20,12 +20,21 @@ end = time.perf_counter()
 print(f"\n✅ TensorFlow loaded ({round(end - start, 2)}s)")
 
 
-def initialize_model(input_shape: tuple) :
+def initialize_model(input_shape: int) :
     """
     Initialize the Neural Network with random weights
     """
-    #reg = regularizers.l1_l2(l2=0.005)
+    text_input = Input(shape=input_shape, name='text_input')
 
+    embedding_dim = 100  # Example dimension for embeddings
+    vocab_size = 10000   # Example vocabulary size
+    embedding_layer = Embedding(input_dim=vocab_size, output_dim=embedding_dim)(text_input)
+    lstm_layer = LSTM(10, return_sequences=True)(embedding_layer)
+    lstm_layer_2 = LSTM(10)(lstm_layer)
+    flattened_text = Flatten()(lstm_layer_2)
+    output_layer = Dense(1, activation='linear')(flattened_text)
+    model = Model(inputs=text_input, outputs=output_layer)
+    '''
     model = models.Sequential()
     model.add(layers.Input(shape=input_shape))
     model.add(layers.Dense(128, activation="relu")) #, kernel_regularizer=reg ?
@@ -35,7 +44,7 @@ def initialize_model(input_shape: tuple) :
     model.add(layers.Dropout(rate=0.3))
     model.add(layers.Dense(32, activation="relu"))
     model.add(layers.Dropout(rate=0.3))
-    model.add(layers.Dense(1, activation="linear"))
+    model.add(layers.Dense(1, activation="linear"))'''
 
     print("✅ Model initialized")
 
