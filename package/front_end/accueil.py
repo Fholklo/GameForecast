@@ -79,8 +79,6 @@ st.markdown(f"<div class='dataEntry centeredText'><h3>🕹️ Saisir l'ID Steam 
 game_id = st.number_input('ID du jeu', format='%d',min_value=0, label_visibility='collapsed')
 
 if check_api_status(SERVICE_URL):
-        st.success("L'API est en ligne")
-
         # Bouton pour envoyer les données
         if st.button('Prédir le rating du jeu et son nombre de joueur'):
             with st.spinner('Chargement en cours...'):
