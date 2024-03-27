@@ -25,7 +25,7 @@ languages_options = ["German", "French", "Italian", 'Spanish - Spain', "Portugue
 
 required_fields = ['App_ID', 'Developers', 'Publishers', 'Achievements', 'Price']
 
-SERVICE_URL="https://gameforecast-fquujalnla-ew.a.run.app"
+SERVICE_URL="http://0.0.0.0:8000"
 
 folder_path = 'package/tok_preproc_model'
 
