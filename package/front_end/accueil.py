@@ -125,48 +125,5 @@ if check_api_status(SERVICE_URL):
                     st.markdown('<div class="customError">L\'ID soumise n\'est pas reconnue ou les données du jeu ne sont pas encore accessibles sur steam</div>', unsafe_allow_html=True)
 
 else:
-        st.error("L'API est hors ligne")
-# # Bouton pour envoyer les données
-# if st.button('Prédir le rating du jeu et son nombre de joueur'):
-#     with st.spinner('Chargement en cours...'):
-#         api_endpoint = SERVICE_URL+"/App_ID"
-#         response = requests.get(api_endpoint,  params={'App_ID': str(game_id)})
-#         if response.ok:
-#             data = response.json()
-#             name = data["Name"]
-#             rating = data["Prediction_rating"]
-#             player = data["Prediction_player"]
-#             url_header = data["Header_Image"]
-#             url_screenshot = data["Screenshots"]
-#             support = "Oui" if data['Support_URL'] else "Non"
-#             st.markdown(f"<div class='titleBox'><h1>{name}</h1></div>", unsafe_allow_html=True)
+        st.markdown('<div class="customError">L\'API est hors ligne</div>', unsafe_allow_html=True)
 
-#             # HTML pour centrer l'image
-#             html_string = f"""
-#             <div style="display:flex;justify-content:center; margin-bottom:10px;">
-#                 <img src="{url_header}" style="max-width:60%;height:auto;">
-#             </div>
-#             """
-#             # Utiliser st.markdown pour afficher l'image centrée
-#             st.markdown(html_string, unsafe_allow_html=True)
-
-#             st.markdown(f"<div class='dataEntry'><h6 style='font-weight:bold;'>{name} aura un rating de {rating} et environ {player} joueurs</h6></div>", unsafe_allow_html=True)
-
-#             # Utilisez également la classe dataEntry pour l'introduction aux données
-#             st.markdown(f"<div class='dataEntry'>Voici les données paramètres récoltées et utilisées pour la prédiction :</div>", unsafe_allow_html=True)
-
-#             # Modifiez les appels à st.markdown pour utiliser la classe .dataEntry
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Déscription</span> : {data.get('About_The_Game', 'Information non disponible')}</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Développeurs</span> : {data.get('Developers', 'Information non disponible')}</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Editeurs</span> : {data.get('Publishers', 'Information non disponible')}</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Genres</span> : {data.get('Genres', 'Information non disponible')}</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Catégories</span> : {data.get('Categories', 'Information non disponible')}</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Prix</span> : {data.get('Price', 'Information non disponible')} euros</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Langues disponibles</span> : {data.get('Supported_Languages', 'Information non disponible')}</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>SAV</span> : {support}</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Nombre de succès sur Steam</span> : {data.get('Achievements', 'Information non disponible')}</div>", unsafe_allow_html=True)
-#             st.markdown(f"<div class='dataEntry'><span style='text-decoration: underline;'>Screenshot utilisé pour le CNN</span> : </div>", unsafe_allow_html=True)
-#             st.image(url_screenshot)
-#             st.balloons()
-#         else:
-#             st.markdown('<div class="customError">L\'ID soumise n\'est pas reconnue ou les données du jeu ne sont pas encore accessibles sur steam</div>', unsafe_allow_html=True)
