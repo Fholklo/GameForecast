@@ -12,8 +12,7 @@ __pycache__
 /notebooks
 #Raw Data/model
 /raw_data
-*.h5
-*.pkl
+/package/tok_preproc_model
 # inteliJ #
 .idea
 *.gz
