@@ -11,33 +11,15 @@ from sklearn.compose import ColumnTransformer
 from package.scripts.params import FEATURE_SELECTION_V2,languages,days_in_year,months_in_year,genre_options,category_options
 from package.scripts.params import developer_categories_dict,publishers_category_dict, european_langs
 
-def download_image(url, app_id, index=0, folder_name='image_data', size=(256, 256)):
-    try:
-        # Obtenir l'image depuis l'URL
-        response = requests.get(url)
-        response.raise_for_status()  # Ceci va arrêter le processus en cas d'erreur
-
-        # Convertir le contenu binaire de l'image en un objet Image et redimensionner
-        image =  tf.image.decode_jpeg(response.content, channels=3)
-        image = tf.image.resize(image, size)  # Redimensionner l'image en 256x256 pixels
-
-        # Construire le chemin du fichier
-        file_path = f"{folder_name}/{app_id}_{index}.jpg"
-
-        # Écrire l'image redimensionnée dans un fichier en ajustant la qualité pour la compression
-        image.save(file_path, 'JPEG')  # Réduire la qualité pour compresser l'image
-        return file_path
-    except Exception as e:
-        print(f"Erreur lors du téléchargement de {url}: {e}")
-        return None
-
 def format_link(app_id):
-    return f'package/image_data/{app_id}_0.jpg'
+    return f'raw_data/image_data/{app_id}_0.jpg'
 
-def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
+def clean_data(data_X:pd.DataFrame, train: bool, api:bool=False) -> pd.DataFrame:
     '''clean the features before entering pipelines'''
-
-    data_X = data_X[FEATURE_SELECTION_V2].copy()
+    if api:
+        pass
+    else:
+        data_X = data_X[FEATURE_SELECTION_V2].copy()
 
     #Supported_Languages processing
     data_X.Supported_Languages.fillna('Missing',inplace=True)
@@ -117,10 +99,9 @@ def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
     if train:
         # This just copies chemins_images, could use directly
         data_X["Screenshots"] = data_X["App_ID"].apply(format_link)
-    else:
-        data_X["Screenshots"] = data_X["Screenshots"].split()
-        download_image(url=data_X["Screenshots"][0],app_id=data_X["App_ID"])
-        data_X["Screenshots"] = data_X["App_ID"].apply(format_link)
+    if api:
+        data_X["Screenshots"] = data_X["Screenshots"].apply(lambda x: x[0])
+
 
     data_X.drop(columns=["App_ID","Categories","Genres","Supported_Languages"],inplace = True)
 

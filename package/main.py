@@ -3,6 +3,8 @@ import pandas as pd
 import tensorflow as tf
 import os
 import pickle
+from io import BytesIO
+import requests
 
 from colorama import Fore, Style
 
@@ -45,8 +47,6 @@ def get_test_data(target: str="rating"):
         data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_test.csv")
         data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_test.csv")
         y = data_Y["Rating"].copy()
-        y = tf.convert_to_tensor(y.to_numpy(),dtype='float')
-
         print("✅ Get test dataset for rating target \n")
 
     elif target == "player":
@@ -54,7 +54,6 @@ def get_test_data(target: str="rating"):
         data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_test_player.csv")
         y = data_Y["Peak Players"].copy()
         y = np.log(1 + y)
-        y = tf.convert_to_tensor(y.to_numpy(),dtype='float')
         print("✅ Get test dataset for player target \n")
 
     else:
@@ -72,6 +71,27 @@ def load_and_preprocess_image(path):
     # Normaliser les valeurs des pixels de l'image pour qu'elles soient dans l'intervalle [0, 1]
     image /= 255.0
     # Retourner l'image prétraitée
+    return image
+
+def load_and_preprocess_image_predict(path_or_url):
+    """
+    Charge et prétraite une image à partir d'un chemin local ou d'une URL.
+    """
+    # Vérifier si le chemin est une URL
+    if path_or_url.startswith('http://') or path_or_url.startswith('https://'):
+        # Charger l'image depuis l'URL
+        response = requests.get(path_or_url)
+        image_data = BytesIO(response.content)
+        image = tf.image.decode_jpeg(image_data.read(), channels=3)
+    else:
+        # Charger l'image à partir du disque
+        image = tf.io.read_file(path_or_url)
+        image = tf.image.decode_jpeg(image, channels=3)
+
+    # Prétraiter l'image
+    image = tf.image.resize(image, [128, 128])  # Modifier selon les besoins
+    image /= 255.0  # Normaliser les valeurs des pixels
+
     return image
 
 def preprocess(X: pd.DataFrame) -> np.ndarray :
@@ -112,7 +132,7 @@ def preprocess(X: pd.DataFrame) -> np.ndarray :
 
     return MAX_Len, numeric_input,text_input,images_input
 
-def preprocess_test(X: pd.DataFrame) -> tf.Tensor :
+def preprocess_test(X: pd.DataFrame, train:bool =True,api:bool = False) -> np.ndarray:
 
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
@@ -126,7 +146,7 @@ def preprocess_test(X: pd.DataFrame) -> tf.Tensor :
         tokenizer = pickle.load(f)
 
     # Process data
-    X_clean = clean_data(X,train=True)
+    X_clean = clean_data(X,train=train,api=api)
 
     X_preprocess = preprocessor.transform(X_clean)
 
@@ -138,7 +158,7 @@ def preprocess_test(X: pd.DataFrame) -> tf.Tensor :
     numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
     text_input = text_tokenize
     image_input = X_preprocess["remainder__Screenshots"].to_numpy()
-    images_input = np.array([load_and_preprocess_image(path).numpy() for path in image_input])
+    images_input = np.array([load_and_preprocess_image_predict(path_or_url).numpy() for path_or_url in image_input])
 
     print("✅ preprocess_test() done \n")
 

@@ -15,23 +15,30 @@ GAR_MEMORY = os.environ.get("GAR_MEMORY")
 LOCAL_DATA_PATH = os.path.join(os.path.expanduser('~'), ".lewagon", "gameforecast", "data")
 LOCAL_REGISTRY_PATH =  os.path.join(os.path.expanduser('~'), ".lewagon", "gameforecast", "training_outputs")
 
-#################
-### MASTER
-#################
+################
+## MASTER
+################
 with open('package/param_json/developer_categories_dict.json', 'r') as json_file:
     developer_categories_dict = json.load(json_file)
 
 with open('package/param_json/publisher_categories_dict.json', 'r') as json_file2:
     publishers_category_dict = json.load(json_file2)
+#main
+folder_path = 'package/tok_preproc_model'
+params_file_path = 'package/scripts/max_len.py'
 
-#################
-### LOCAL NOTEBOOKS
-#################
-#with open('../package/param_json/developer_categories_dict.json', 'r') as json_file:
+# #################
+# ### LOCAL NOTEBOOKS
+# #################
+# with open('../package/param_json/developer_categories_dict.json', 'r') as json_file:
 #    developer_categories_dict = json.load(json_file)
 
-#with open('../package/param_json/publisher_categories_dict.json', 'r') as json_file2:
+# with open('../package/param_json/publisher_categories_dict.json', 'r') as json_file2:
 #    publishers_category_dict = json.load(json_file2)
+
+# folder_path = '../package/tok_preproc_model'
+# params_file_path = '../package/scripts/max_len.py'
+
 
 #Preprocessing
 
@@ -76,7 +83,3 @@ days_in_year = 365.25  # moyenne en tenant compte des années bissextiles
 months_in_year = 12
 
 MAX_Len = 2862
-
-#main
-folder_path = 'package/tok_preproc_model'
-params_file_path = 'package/scripts/max_len.py'

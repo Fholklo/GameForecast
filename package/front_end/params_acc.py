@@ -27,8 +27,8 @@ required_fields = ['App_ID', 'Developers', 'Publishers', 'Achievements', 'Price'
 
 SERVICE_URL="https://gameforecast-fquujalnla-ew.a.run.app"
 
-folder_path_player = 'package/tok_preproc_model/model_player'
-folder_path_rating = 'package/tok_preproc_model/model_rating'
+folder_path = 'package/tok_preproc_model'
+
 
 #fonction
 
