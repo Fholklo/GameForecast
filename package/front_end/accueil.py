@@ -61,9 +61,9 @@ st.markdown(entries_css, unsafe_allow_html=True)
 
 # Dictionnaire pour stocker les entrées de l'utilisateur
 st.markdown(f"""<div class='dataEntry centeredText'><h1>👾 GameForecast 👾 </h1></div>""", unsafe_allow_html=True)
-st.markdown(f"""<div class='dataEntry centeredText'><h2> Prédir les performances de votre jeu </h2></div>""", unsafe_allow_html=True)
+st.markdown(f"""<div class='dataEntry centeredText'><h4> Prédir les performances de votre jeu </h4></div>""", unsafe_allow_html=True)
 
-st.markdown(f"<div class='dataEntry centeredText'><h2>🕹️ Saisir l'ID Steam du jeu 🕹️</h2></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='dataEntry centeredText'><h5>🕹️ Saisir l'ID Steam du jeu 🕹️</h5></div>", unsafe_allow_html=True)
 game_id = st.text_input('ID du jeu', label_visibility='collapsed')
 
 # Bouton pour envoyer les données
