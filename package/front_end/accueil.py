@@ -127,7 +127,7 @@ col1, col2 = st.columns(2)
 
 # Dans la première colonne, vérifier si l'API est en ligne
 with col1:
-    if check_api_status(api_endpoint):
+    if check_api_status(SERVICE_URL):
         st.success("L'API est en ligne")
         # Si l'API est en ligne, afficher le bouton dans la deuxième colonne
         with col2:
