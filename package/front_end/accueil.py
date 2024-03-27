@@ -70,7 +70,7 @@ game_id = st.number_input_input('ID du jeu', format='%d',min_value=0, label_visi
 if st.button('Prédir le rating du jeu et son nombre de joueur'):
     with st.spinner('Chargement en cours...'):
         api_endpoint = SERVICE_URL+"/App_ID"
-        response = requests.get(api_endpoint,  params={'App_ID': game_id})
+        response = requests.get(api_endpoint,  params={'App_ID': str(game_id)})
         if response.ok:
             data = response.json()
             name = data["Name"]
