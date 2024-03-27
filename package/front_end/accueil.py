@@ -101,4 +101,4 @@ if st.button('Prédir le rating du jeu et son nombre de joueur'):
             st.image(url_screenshot)
             st.balloons()
         else:
-            st.error("Une erreur s'est produite avec l'API.")
+            st.error("L'ID soumise n'est pas reconnu ou les données du jeu ne sont pas encore accessible sur steam ")
