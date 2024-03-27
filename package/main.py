@@ -362,7 +362,7 @@ if __name__ == '__main__':
     # training rating model
     data_X, data_Y = get_data(target="player")
 
-    max_len, numeric_input,text_input,image_input = preprocess(data_X)
+    max_len, numeric_input,text_input,image_input = preprocess(data_X[:50])
 
     trained_model_num, val_mae, val_mse ,numeric_input_val,\
         text_input_train, text_input_val,image_input_train,image_input_val,\
@@ -370,7 +370,7 @@ if __name__ == '__main__':
         numeric_input=numeric_input,
         text_input=text_input,
         image_input=image_input,
-        y_train=data_Y,
+        y_train=data_Y[:50],
         target="player",
         batch_size = 32,
         patience = 20,

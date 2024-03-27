@@ -50,6 +50,8 @@ def predict_rating(
         Linux= [Linux],
         Achievements= [Achievements],
         Price= [Price],
+        About_The_Game = [About_The_game],
+        Screenshots = [Screenshosts]
     ))
     numeric_input,text_input, images_input = preprocess_test(X_pred)
 

@@ -118,7 +118,8 @@ def clean_data(data_X:pd.DataFrame, train: bool) -> pd.DataFrame:
         # This just copies chemins_images, could use directly
         data_X["Screenshots"] = data_X["App_ID"].apply(format_link)
     else:
-        download_image(url=data_X["Screenshots"],app_id=data_X["App_ID"])
+        data_X["Screenshots"] = data_X["Screenshots"].split()
+        download_image(url=data_X["Screenshots"][0],app_id=data_X["App_ID"])
         data_X["Screenshots"] = data_X["App_ID"].apply(format_link)
 
     data_X.drop(columns=["App_ID","Categories","Genres","Supported_Languages"],inplace = True)
