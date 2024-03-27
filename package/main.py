@@ -6,15 +6,13 @@ import pickle
 
 from colorama import Fore, Style
 
-from tensorflow import keras
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 
 from sklearn.model_selection import train_test_split
 
 from package.scripts.preprocessor import clean_data, full_preprocessor
-from package.scripts.params import folder_path,params_file_path
-from package.scripts.max_len import MAX_LEN
+from package.scripts.params import folder_path,MAX_Len
 
 from package.ml_logics.model import initialize_model_numeric,initialize_cnn_model,initialize_model_text,initialize_metamodel
 from package.ml_logics.model import compile_model, train_model_numeric, train_model_image,train_model_text,train_metamodel
@@ -92,12 +90,7 @@ def preprocess(X: pd.DataFrame) -> np.ndarray :
     tokenizer.fit_on_texts(X_clean["About_The_Game"])
     sequences = tokenizer.texts_to_sequences(X_clean["About_The_Game"])
 
-    max_len = max([len(seq) for seq in sequences])
-    #SAUVEGARDE DE MAX LEN COMMENT VARIABLE DANS PARAMS POUR train_text
-    with open(params_file_path, 'w') as file:
-        file.write(f"MAX_LEN = {max_len}\n")
-
-    text_tokenize = pad_sequences(sequences, maxlen=max_len,padding='post', truncating='post')
+    text_tokenize = pad_sequences(sequences, maxlen=MAX_Len,padding='post', truncating='post')
 
     numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
 
@@ -117,7 +110,7 @@ def preprocess(X: pd.DataFrame) -> np.ndarray :
 
     print("✅ preprocess() done \n")
 
-    return max_len, numeric_input,text_input,images_input
+    return MAX_Len, numeric_input,text_input,images_input
 
 def preprocess_test(X: pd.DataFrame) -> tf.Tensor :
 
@@ -140,7 +133,7 @@ def preprocess_test(X: pd.DataFrame) -> tf.Tensor :
     #token pour le texte
     sequences = tokenizer.texts_to_sequences(X_clean["About_The_Game"])
 
-    text_tokenize = pad_sequences(sequences, maxlen=MAX_LEN,padding='post', truncating='post')
+    text_tokenize = pad_sequences(sequences, maxlen=MAX_Len,padding='post', truncating='post')
 
     numeric_input = X_preprocess.drop(columns = ["remainder__About_The_Game","remainder__Screenshots"]).to_numpy()
     text_input = text_tokenize
@@ -205,7 +198,7 @@ def train_text(
         validation_split = 0.2
     ) -> float:
 
-    max_len = MAX_LEN
+    max_len = MAX_Len
 
     file_path_tok = os.path.join(folder_path, 'tokenizer.pkl')
     with open(file_path_tok, 'rb') as f:
@@ -369,7 +362,7 @@ if __name__ == '__main__':
     # training rating model
     data_X, data_Y = get_data(target="player")
 
-    max_len, numeric_input,text_input,image_input = preprocess(data_X[:200])
+    max_len, numeric_input,text_input,image_input = preprocess(data_X)
 
     trained_model_num, val_mae, val_mse ,numeric_input_val,\
         text_input_train, text_input_val,image_input_train,image_input_val,\
@@ -377,7 +370,7 @@ if __name__ == '__main__':
         numeric_input=numeric_input,
         text_input=text_input,
         image_input=image_input,
-        y_train=data_Y[:200],
+        y_train=data_Y,
         target="player",
         batch_size = 32,
         patience = 20,
@@ -388,7 +381,7 @@ if __name__ == '__main__':
         y_train=y_train_train,
         target="player",
         batch_size = 32,
-        patience = 5,
+        patience = 20,
         validation_split = 0.2)
 
     trained_model_image, _, _ =train_image(

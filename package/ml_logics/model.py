@@ -151,7 +151,7 @@ def train_model_numeric(
         x=X_num,
         y=Y_num,
         validation_split=validation_split,
-        epochs=150,
+        epochs=250,
         batch_size=batch_size,
         callbacks=[es,rp],
         verbose=1
@@ -195,7 +195,7 @@ def train_model_text(
         x=X_text,
         y=Y_text,
         validation_split=validation_split,
-        epochs=150,
+        epochs=250,
         batch_size=batch_size,
         callbacks=[es,rp],
         verbose=1
@@ -239,7 +239,7 @@ def train_model_image(
         x=X_image,
         y=Y_image,
         validation_split=validation_split,
-        epochs=150,
+        epochs=250,
         batch_size=batch_size,
         callbacks=[es,rp],
         verbose=1
@@ -283,7 +283,7 @@ def train_metamodel(
         x=X_meta,
         y=Y_meta,
         validation_split=validation_split,
-        epochs=150,
+        epochs=250,
         batch_size=batch_size,
         callbacks=[es,rp],
         verbose=1

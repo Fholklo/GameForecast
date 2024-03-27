@@ -75,6 +75,8 @@ days_in_year = 365.25  # moyenne en tenant compte des années bissextiles
 
 months_in_year = 12
 
+MAX_Len = 2862
+
 #main
 folder_path = 'package/tok_preproc_model'
 params_file_path = 'package/scripts/max_len.py'
