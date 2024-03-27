@@ -170,16 +170,3 @@ else:
 #             st.balloons()
 #         else:
 #             st.markdown('<div class="customError">L\'ID soumise n\'est pas reconnue ou les données du jeu ne sont pas encore accessibles sur steam</div>', unsafe_allow_html=True)
-
-col1, col2 = st.columns(2)
-
-# Dans la première colonne, vérifier si l'API est en ligne
-with col1:
-    if check_api_status(SERVICE_URL):
-        st.success("L'API est en ligne")
-        # Si l'API est en ligne, afficher le bouton dans la deuxième colonne
-        with col2:
-            if st.button('Appuyez sur ce bouton'):
-                st.write('Bouton appuyé!')
-    else:
-        st.error("L'API est hors ligne")
