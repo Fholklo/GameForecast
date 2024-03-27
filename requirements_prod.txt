@@ -1,26 +1,18 @@
 #API
 fastapi==0.108.0
-pytz
 uvicorn
 
-#registry
+# DEEP LEARNING
 colorama
 numpy==1.23.5
 pandas==1.5.3
 scikit-learn==1.3.1
-
-# DEEP LEARNING
 tensorflow==2.15.0
-google-cloud-storage
+requests
 
+#R&D
 pytest
 pylint
-ipdb
 jupyterlab
 jupyter
-matplotlib
-seaborn
-statsmodels
-datetime
-uvicorn
-python-multipart
+
