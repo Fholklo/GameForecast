@@ -108,4 +108,4 @@ if st.button('Prédir le rating du jeu et son nombre de joueur'):
             st.image(url_screenshot)
             st.balloons()
         else:
-            st.markdown('<div class="customError">L\'ID soumise n\'est pas reconnu ou les données du jeu ne sont pas encore accessible sur steam</div>', unsafe_allow_html=True)
+            st.markdown('<div class="customError">L\'ID soumise n\'est pas reconnue ou les données du jeu ne sont pas encore accessibles sur steam</div>', unsafe_allow_html=True)
