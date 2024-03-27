@@ -115,7 +115,7 @@ def compile_model(model, target:str=None) :
     optimizer = optimizers.Adam(learning_rate=lr_schedule)
 
     if target == "rating":
-        model.compile(loss="mse", optimizer=optimizer, metrics=["mae"])
+        model.compile(loss="mae", optimizer=optimizer, metrics=["mse"])
     else:
         model.compile(loss="mean_squared_logarithmic_error", optimizer=optimizer, metrics=["mean_squared_logarithmic_error","mae"])
 
@@ -158,7 +158,7 @@ def train_model_numeric(
     )
 
     if target == "rating":
-        print(f"""✅ Model_num {target} trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_num {target} trained with : min val MSE: {round(np.min(history.history['val_mse']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
@@ -202,7 +202,7 @@ def train_model_text(
     )
 
     if target == "rating":
-        print(f"""✅ Model_text {target} trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_text {target} trained with : min val MSE: {round(np.min(history.history['val_mse']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
@@ -246,7 +246,7 @@ def train_model_image(
     )
 
     if target == "rating":
-        print(f"""✅ Model_text {target} trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_text {target} trained with : min val MSE: {round(np.min(history.history['val_mse']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 
@@ -290,7 +290,7 @@ def train_metamodel(
     )
 
     if target == "rating":
-        print(f"""✅ Model_metamodel {target} trained with : min val MAE: {round(np.min(history.history['val_mae']), 2)} \n
+        print(f"""✅ Model_metamodel {target} trained with : min val MSE: {round(np.min(history.history['val_mse']), 2)} \n
 
                                     : loss: {round(np.min(history.history['val_loss']), 2)}""")
 

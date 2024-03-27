@@ -2,6 +2,18 @@ import streamlit as st
 import requests
 from params_acc import SERVICE_URL
 
+def check_api_status(url):
+    try:
+        response = requests.get(url)
+        # Vous pouvez choisir le code de statut que vous attendez, 200 est le standard pour une réponse réussie.
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except requests.exceptions.RequestException as e:
+        # Gérer les exceptions ici (par exemple, l'API est inaccessible)
+        return False
+
 # Définition des noms des colonnes et leurs étiquettes correspondantes
 background_image_url ="https://www.la-console-retro.fr/cdn/shop/articles/actualite-lexplosion-du-marche-du-jeux-video-retrogaming-558644.jpg"
 
@@ -110,3 +122,16 @@ if st.button('Prédir le rating du jeu et son nombre de joueur'):
             st.balloons()
         else:
             st.markdown('<div class="customError">L\'ID soumise n\'est pas reconnue ou les données du jeu ne sont pas encore accessibles sur steam</div>', unsafe_allow_html=True)
+
+col1, col2 = st.columns(2)
+
+# Dans la première colonne, vérifier si l'API est en ligne
+with col1:
+    if check_api_status(api_endpoint):
+        st.success("L'API est en ligne")
+        # Si l'API est en ligne, afficher le bouton dans la deuxième colonne
+        with col2:
+            if st.button('Appuyez sur ce bouton'):
+                st.write('Bouton appuyé!')
+    else:
+        st.error("L'API est hors ligne")

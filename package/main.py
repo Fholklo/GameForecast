@@ -24,14 +24,14 @@ from package.ml_logics.registry import save_model, load_most_recent_model, save_
 def get_data(target: str="rating"):
     # get the data
     if target == "rating":
-        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv") #/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv
-        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_train.csv")
+        data_X = pd.read_csv("raw_data/X_train.csv") #/home/clement/code/Fholklo/GameForecast/raw_data/X_train.csv
+        data_Y = pd.read_csv("raw_data/y_train.csv")
         y = data_Y["Rating"].copy()
         print("✅ Get train dataset for rating target \n")
 
     elif target == "player":
-        data_X = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/X_train_player.csv")
-        data_Y = pd.read_csv("/home/clement/code/Fholklo/GameForecast/raw_data/y_train_player.csv")
+        data_X = pd.read_csv("raw_data/X_train_player.csv")
+        data_Y = pd.read_csv("raw_data/y_train_player.csv")
         y = data_Y["Peak Players"].copy()
         y = np.log(1 + y)
         print("✅ Get train dataset for player target \n")
@@ -193,9 +193,9 @@ def train_numeric(
         validation_split=validation_split
     )
 
-    val_mse = np.min(history.history['val_loss'])
+    val_mae = np.min(history.history['val_loss'])
     if target == "rating":
-        val_mae = np.min(history.history['val_mae'])
+        val_mse = np.min(history.history['val_mse'])
     if target == "player":
         val_mae = np.min(history.history['val_loss'])
 
@@ -239,9 +239,9 @@ def train_text(
         validation_split=validation_split
     )
 
-    val_mse = np.min(history.history['val_loss'])
+    val_mae = np.min(history.history['val_loss'])
     if target == "rating":
-        val_mae = np.min(history.history['val_mae'])
+        val_mse = np.min(history.history['val_mse'])
     if target == "player":
         val_mae = np.min(history.history['val_loss'])
 
@@ -278,9 +278,9 @@ def train_image(
         validation_split=validation_split
     )
 
-    val_mse = np.min(history.history['val_loss'])
+    val_mae = np.min(history.history['val_loss'])
     if target == "rating":
-        val_mae = np.min(history.history['val_mae'])
+        val_mse = np.min(history.history['val_mse'])
     if target == "player":
         val_mae = np.min(history.history['val_loss'])
 
@@ -327,9 +327,9 @@ def train_meta_model(
         validation_split=validation_split
     )
 
-    val_mse = np.min(history.history['val_loss'])
+    val_mae = np.min(history.history['val_loss'])
     if target == "rating":
-        val_mae = np.min(history.history['val_mae'])
+        val_mse = np.min(history.history['val_mse'])
     if target == "player":
         val_mae = np.min(history.history['val_loss'])
 
@@ -369,20 +369,20 @@ def evaluate_model(
 
     loss = metrics["loss"]
     if target == "rating":
-        mae = metrics["mae"]
-        print(f"✅ Model rating evaluated, MAE: {round(mae, 2)}, MSE loss {round(loss, 2)}")
+        mse = metrics["mse"]
+        print(f"✅ Model {target} evaluated, MSE: {round(mse, 2)}, MAE loss {round(loss, 2)}")
 
     if target == "player":
-        print(f"✅ Model rating evaluated, RMSE loss {round(loss, 2)}")
+        print(f"✅ Model {target} evaluated, RMSE loss {round(loss, 2)}")
 
     return metrics
 
 if __name__ == '__main__':
 
     # training rating model
-    data_X, data_Y = get_data(target="player")
+    data_X, data_Y = get_data(target="rating")
 
-    max_len, numeric_input,text_input,image_input = preprocess(data_X[:50])
+    max_len, numeric_input,text_input,image_input = preprocess(data_X)
 
     trained_model_num, val_mae, val_mse ,numeric_input_val,\
         text_input_train, text_input_val,image_input_train,image_input_val,\
@@ -390,8 +390,8 @@ if __name__ == '__main__':
         numeric_input=numeric_input,
         text_input=text_input,
         image_input=image_input,
-        y_train=data_Y[:50],
-        target="player",
+        y_train=data_Y,
+        target="rating",
         batch_size = 32,
         patience = 20,
         validation_split = 0.2)
@@ -399,7 +399,7 @@ if __name__ == '__main__':
     trained_model_text, _, _ = train_text(
         text_input=text_input_train,
         y_train=y_train_train,
-        target="player",
+        target="rating",
         batch_size = 32,
         patience = 20,
         validation_split = 0.2)
@@ -407,7 +407,7 @@ if __name__ == '__main__':
     trained_model_image, _, _ =train_image(
         image_input=image_input_train,
         y_train=y_train_train,
-        target="player",
+        target="rating",
         batch_size = 32,
         patience = 20,
         validation_split = 0.2
@@ -418,20 +418,20 @@ if __name__ == '__main__':
         X_val_text=text_input_val,
         X_val_image=image_input_val,
         y_val=y_train_val,
-        target="player",
+        target="rating",
         batch_size = 32,
         patience = 20,
         validation_split = 0.2
     )
 
     #testing rating model
-    data_X_test, y_test = get_test_data(target="player")
+    data_X_test, y_test = get_test_data(target="rating")
 
     numeric_input_test,text_input_test, image_input_test = preprocess_test(X=data_X_test)
 
-    evaluate_model(trained_model_num,numeric_input_test,y_test,batch_size=32,target="player")
-    evaluate_model(trained_model_text,text_input_test,y_test,batch_size=32,target="player")
-    evaluate_model(trained_model_image,image_input_test,y_test,batch_size=32,target="player")
+    evaluate_model(trained_model_num,numeric_input_test,y_test,batch_size=32,target="rating")
+    evaluate_model(trained_model_text,text_input_test,y_test,batch_size=32,target="rating")
+    evaluate_model(trained_model_image,image_input_test,y_test,batch_size=32,target="rating")
 
     preds_new_numeric = trained_model_num.predict(numeric_input_test)
     preds_new_text = trained_model_text.predict(text_input_test)
