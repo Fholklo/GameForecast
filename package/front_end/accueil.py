@@ -45,7 +45,6 @@ entries_css = f"""
 .centeredText {{
     text-align: center; /* Centre le texte horizontalement */
 }}
-<style>
 .customError {{
     background-color: rgba(255, 0, 0, 0.8); /* Rouge avec 80% d'opacité */
     color: white;
@@ -53,7 +52,6 @@ entries_css = f"""
     border-radius: 10px;
     margin-bottom: 10px;
 }}
-</style>
 </style>
 """
 
