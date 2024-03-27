@@ -56,7 +56,7 @@ st.markdown(entries_css, unsafe_allow_html=True)
 st.markdown(f"<div class='dataEntry centeredText'><h1>👾 GameForecast: Prédir les performances de votre jeu à sa sortie 👾</h1></div>", unsafe_allow_html=True)
 
 st.markdown(f"<div class='dataEntry centeredText'><h2>🕹️ Saisir l'ID Steam du jeu 🕹️</h2></div>", unsafe_allow_html=True)
-game_id = st.text_input('')
+game_id = st.text_input('ID du jeu', label_visibility='collapsed')
 
 # Bouton pour envoyer les données
 if st.button('Prédir le rating du jeu et son nombre de joueur'):
